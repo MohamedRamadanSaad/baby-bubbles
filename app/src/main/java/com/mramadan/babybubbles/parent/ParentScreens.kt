@@ -2,6 +2,10 @@ package com.mramadan.babybubbles.parent
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -18,15 +22,19 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -34,13 +42,18 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -53,13 +66,13 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,11 +83,13 @@ import com.mramadan.babybubbles.R
 import com.mramadan.babybubbles.SpeakLang
 import com.mramadan.babybubbles.game.BubbleColors
 import com.mramadan.babybubbles.game.GameMode
+import com.mramadan.babybubbles.game.SpeedLevel
 import com.mramadan.babybubbles.game.drawBubbleGloss
 import com.mramadan.babybubbles.game.drawClearBubble
 import com.mramadan.babybubbles.game.drawColorBubble
 import com.mramadan.babybubbles.game.drawPainterCentered
 import com.mramadan.babybubbles.ui.Palette
+import org.json.JSONArray
 import kotlin.random.Random
 
 /** Arabic-Indic digits for parent-facing numbers. */
@@ -109,18 +124,62 @@ private fun DrawScope.iconPath(data: String, color: Color, strokeWidth: Float? =
     }
 }
 
+private class ModeOption(val mode: GameMode, val label: String, val art: DrawScope.() -> Unit)
+
 @Composable
 fun HomeScreen(
     mode: GameMode,
     onModeChange: (GameMode) -> Unit,
+    speed: SpeedLevel,
+    onSpeedChange: (SpeedLevel) -> Unit,
     speakLang: SpeakLang,
     onSpeakLangChange: (SpeakLang) -> Unit,
     vibrate: Boolean,
     onVibrateChange: (Boolean) -> Unit,
     onStart: () -> Unit,
 ) = Rtl {
-    val cat = rememberVectorPainter(ImageVector.vectorResource(R.drawable.animal_cat))
-    val duck = rememberVectorPainter(ImageVector.vectorResource(R.drawable.animal_duck))
+    val cat = painterResource(R.drawable.animal_cat)
+    val duck = painterResource(R.drawable.animal_duck)
+    val car = painterResource(R.drawable.veh_car)
+    val plane = painterResource(R.drawable.veh_airplane)
+    val parrot = painterResource(R.drawable.bird_parrot)
+    val apple = painterResource(R.drawable.fruit_apple)
+    val banana = painterResource(R.drawable.fruit_banana)
+    val fish = painterResource(R.drawable.sea_clownfish)
+    val flagSa = painterResource(R.drawable.flag_sa)
+    val flagEg = painterResource(R.drawable.flag_eg)
+    var showCredits by remember { mutableStateOf(false) }
+
+    val options = listOf(
+        ModeOption(GameMode.COLORS, "الألوان") {
+            drawColorBubble(Offset(28.dp.toPx(), 52.dp.toPx()), 22.dp.toPx(), Red)
+            drawColorBubble(Offset(74.dp.toPx(), 56.dp.toPx()), 20.dp.toPx(), Blue)
+            drawColorBubble(Offset(52.dp.toPx(), 22.dp.toPx()), 18.dp.toPx(), Green)
+        },
+        ModeOption(GameMode.ANIMALS, "الحيوانات") {
+            inBubble(cat, Offset(30.dp.toPx(), 50.dp.toPx()), 28.dp.toPx())
+            inBubble(duck, Offset(78.dp.toPx(), 30.dp.toPx()), 24.dp.toPx())
+        },
+        ModeOption(GameMode.VEHICLES, "المواصلات") {
+            inBubble(car, Offset(30.dp.toPx(), 50.dp.toPx()), 28.dp.toPx())
+            inBubble(plane, Offset(78.dp.toPx(), 30.dp.toPx()), 24.dp.toPx())
+        },
+        ModeOption(GameMode.BIRDS, "الطيور") {
+            inBubble(parrot, Offset(52.dp.toPx(), 42.dp.toPx()), 34.dp.toPx())
+        },
+        ModeOption(GameMode.FRUITS, "الفواكه") {
+            inBubble(apple, Offset(30.dp.toPx(), 50.dp.toPx()), 28.dp.toPx())
+            inBubble(banana, Offset(78.dp.toPx(), 30.dp.toPx()), 24.dp.toPx())
+        },
+        ModeOption(GameMode.SEA, "البحر") {
+            drawRoundRect(Color(0xFF4FB8F0), cornerRadius = CornerRadius(16.dp.toPx()))
+            inBubble(fish, Offset(52.dp.toPx(), 42.dp.toPx()), 32.dp.toPx())
+        },
+        ModeOption(GameMode.FLAGS, "الأعلام") {
+            flagCard(flagSa, Offset(34.dp.toPx(), 48.dp.toPx()), 52.dp.toPx())
+            flagCard(flagEg, Offset(74.dp.toPx(), 30.dp.toPx()), 42.dp.toPx())
+        },
+    )
 
     Column(
         modifier = Modifier
@@ -128,8 +187,8 @@ fun HomeScreen(
             .background(Palette.Lavender)
             .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Canvas(Modifier.size(96.dp, 70.dp)) {
@@ -137,27 +196,16 @@ fun HomeScreen(
                 drawColorBubble(Offset(70.dp.toPx(), 44.dp.toPx()), 20.dp.toPx(), Teal, shadow = false)
                 drawColorBubble(Offset(49.dp.toPx(), 25.dp.toPx()), 25.dp.toPx(), Violet, shadow = false)
             }
-            Text(
-                "فقاعات",
-                fontSize = 46.sp,
-                lineHeight = 52.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Palette.Purple,
-            )
+            Text("فقاعات", fontSize = 44.sp, lineHeight = 50.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Purple)
             Text("لعب آمن لأصغر الأيدي", fontSize = 16.sp, color = Palette.Muted)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("اختر الوضع", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Palette.Ink)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ModeCard("الألوان", mode == GameMode.COLORS, { onModeChange(GameMode.COLORS) }) {
-                    drawColorBubble(Offset(32.dp.toPx(), 60.dp.toPx()), 26.dp.toPx(), Red)
-                    drawColorBubble(Offset(83.dp.toPx(), 65.dp.toPx()), 23.dp.toPx(), Blue)
-                    drawColorBubble(Offset(58.dp.toPx(), 26.dp.toPx()), 22.dp.toPx(), Green)
-                }
-                ModeCard("الحيوانات", mode == GameMode.ANIMALS, { onModeChange(GameMode.ANIMALS) }) {
-                    animalInBubble(cat, Offset(33.dp.toPx(), 59.dp.toPx()), 33.dp.toPx())
-                    animalInBubble(duck, Offset(90.dp.toPx(), 32.dp.toPx()), 28.dp.toPx())
+            options.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { o -> ModeCard(o.label, mode == o.mode, { onModeChange(o.mode) }, o.art) }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
@@ -167,31 +215,24 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .background(Color.White)
-                .padding(horizontal = 18.dp, vertical = 6.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("نطق أسماء الحيوانات", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Palette.Ink)
-                Row(
-                    Modifier
-                        .clip(CircleShape)
-                        .background(Palette.Track)
-                        .padding(3.dp)
-                ) {
+            SettingRow("سرعة الفقاعات") {
+                SegmentGroup {
+                    Segment("بطيئة", speed == SpeedLevel.SLOW) { onSpeedChange(SpeedLevel.SLOW) }
+                    Segment("متوسطة", speed == SpeedLevel.NORMAL) { onSpeedChange(SpeedLevel.NORMAL) }
+                    Segment("سريعة", speed == SpeedLevel.FAST) { onSpeedChange(SpeedLevel.FAST) }
+                }
+            }
+            HorizontalDivider(color = Palette.Divider)
+            SettingRow("نطق الأسماء") {
+                SegmentGroup {
                     Segment("عربي", speakLang == SpeakLang.AR) { onSpeakLangChange(SpeakLang.AR) }
                     Segment("English", speakLang == SpeakLang.EN) { onSpeakLangChange(SpeakLang.EN) }
                 }
             }
             HorizontalDivider(color = Palette.Divider)
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("اهتزاز خفيف عند الفرقعة", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Palette.Ink)
+            SettingRow("اهتزاز خفيف عند الفرقعة") {
                 Switch(
                     checked = vibrate,
                     onCheckedChange = onVibrateChange,
@@ -242,19 +283,56 @@ fun HomeScreen(
                 }
             }
             Text(
-                "للخروج أثناء اللعب: اضغط زري رفع الصوت وخفضه معًا ثلاث ثوانٍ.",
+                "للخروج أثناء اللعب: اضغط زري رفع الصوت وخفضه معًا ثلاث ثوانٍ. وعند ورود مكالمة يظهر زر الأب على الشاشة.",
                 fontSize = 14.5.sp,
                 lineHeight = 22.sp,
                 color = Palette.TipInk,
             )
         }
+
+        TextButton(onClick = { showCredits = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text("حقوق الأصوات والصور", fontSize = 14.sp, color = Palette.Muted)
+        }
     }
+
+    if (showCredits) CreditsDialog { showCredits = false }
 }
 
-private fun DrawScope.animalInBubble(painter: Painter, center: Offset, r: Float) {
+private fun DrawScope.inBubble(painter: Painter, center: Offset, r: Float) {
     drawClearBubble(center, r, strokeWidth = 2.dp.toPx())
     drawPainterCentered(painter, center, r * 1.5f)
     drawBubbleGloss(center, r)
+}
+
+private fun DrawScope.flagCard(painter: Painter, center: Offset, width: Float) {
+    val h = width * 0.75f
+    translate(center.x - width / 2f, center.y - h / 2f) {
+        with(painter) { draw(Size(width, h)) }
+        drawRoundRect(Color.White, size = Size(width, h), cornerRadius = CornerRadius(4.dp.toPx()), style = Stroke(2.dp.toPx()))
+    }
+}
+
+@Composable
+private fun SettingRow(label: String, control: @Composable () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Palette.Ink)
+        control()
+    }
+}
+
+@Composable
+private fun SegmentGroup(content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier
+            .clip(CircleShape)
+            .background(Palette.Track)
+            .padding(3.dp),
+        content = content,
+    )
 }
 
 @Composable
@@ -264,11 +342,11 @@ private fun RowScope.ModeCard(
     onClick: () -> Unit,
     art: DrawScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(22.dp)
     Box(
         Modifier
             .weight(1f)
-            .height(176.dp)
+            .height(138.dp)
             .then(
                 if (selected) Modifier.shadow(10.dp, shape, ambientColor = Palette.Purple, spotColor = Palette.Purple)
                 else Modifier
@@ -277,26 +355,26 @@ private fun RowScope.ModeCard(
             .background(Color.White)
             .border(if (selected) 3.dp else 2.dp, if (selected) Palette.Purple else Palette.CardBorder, shape)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(14.dp)
+            .padding(10.dp)
     ) {
         Column(
             Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Canvas(Modifier.size(120.dp, 96.dp), onDraw = art)
-            Text(label, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Palette.Ink)
+            Canvas(Modifier.size(104.dp, 84.dp), onDraw = art)
+            Text(label, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Palette.Ink)
         }
         if (selected) {
             Box(
                 Modifier
                     .align(Alignment.TopStart)
-                    .size(26.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
                     .background(Palette.Purple),
                 contentAlignment = Alignment.Center,
             ) {
-                Canvas(Modifier.size(16.dp)) {
+                Canvas(Modifier.size(15.dp)) {
                     iconPath("M5 12.5 L10 17 L19 7.5", Color.White, strokeWidth = 3f)
                 }
             }
@@ -308,20 +386,112 @@ private fun RowScope.ModeCard(
 private fun Segment(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
-            .defaultMinSize(minWidth = 58.dp)
+            .defaultMinSize(minWidth = 52.dp)
             .height(36.dp)
             .clip(CircleShape)
             .background(if (selected) Palette.Purple else Color.Transparent)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             label,
-            fontSize = 15.sp,
+            fontSize = 14.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
             color = if (selected) Color.White else Palette.Ink,
         )
+    }
+}
+
+@Composable
+private fun CreditsDialog(onClose: () -> Unit) {
+    val context = LocalContext.current
+    val lines = remember {
+        val sounds = runCatching {
+            val json = context.assets.open("sound_credits.json").bufferedReader().use { it.readText() }
+            val arr = JSONArray(json)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                "${o.optString("title").removePrefix("File:")} — ${o.optString("artist")} — ${o.optString("license")}"
+            }
+        }.getOrDefault(emptyList())
+        listOf(
+            "الرسوم: رسوم أصلية لهذه اللعبة.",
+            "الأعلام: flag-icons, Panayiotis Lipiridis — MIT License",
+            "الخط: Baloo Bhaijaan 2 — SIL Open Font License",
+            "الأصوات من ويكيميديا كومنز:",
+        ) + sounds
+    }
+    AlertDialog(
+        onDismissRequest = onClose,
+        confirmButton = { TextButton(onClick = onClose) { Text("إغلاق") } },
+        title = { Text("حقوق الأصوات والصور", fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn(Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                items(lines) { Text(it, fontSize = 13.sp, lineHeight = 19.sp, color = Palette.Ink) }
+            }
+        },
+    )
+}
+
+/** Shown over the game while the phone rings. Only the parent can leave to answer. */
+@Composable
+fun CallOverlay(onParent: () -> Unit) = Rtl {
+    val pulse by rememberInfiniteTransition(label = "ring").animateFloat(
+        initialValue = 1f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(tween(500), RepeatMode.Reverse),
+        label = "pulse",
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Palette.Scrim.copy(alpha = 0.55f))
+            .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .shadow(24.dp, RoundedCornerShape(30.dp))
+                .clip(RoundedCornerShape(30.dp))
+                .background(Color.White)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Box(
+                Modifier
+                    .size(72.dp)
+                    .scale(pulse)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE5F4E4)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(Modifier.size(36.dp)) {
+                    iconPath(
+                        "M6.6 10.8 C8 13.6 10.4 16 13.2 17.4 L15.4 15.2 C15.7 14.9 16.1 14.8 16.4 15 C17.5 15.4 18.7 15.6 20 15.6 C20.6 15.6 21 16 21 16.6 V20 C21 20.6 20.6 21 20 21 C10.6 21 3 13.4 3 4 C3 3.4 3.4 3 4 3 H7.5 C8.1 3 8.5 3.4 8.5 4 C8.5 5.3 8.7 6.5 9.1 7.6 C9.2 7.9 9.1 8.3 8.9 8.6 Z",
+                        Color(0xFF2E9E4F),
+                        strokeWidth = null,
+                    )
+                }
+            }
+            Text("مكالمة واردة", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Ink)
+            Text(
+                "للرد: اضغط الزر ثم أجب عن سؤال الأب، فتُفتح المكالمة.",
+                fontSize = 15.sp,
+                lineHeight = 22.sp,
+                color = Palette.Muted,
+                textAlign = TextAlign.Center,
+            )
+            Button(
+                onClick = onParent,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E9E4F), contentColor = Color.White),
+            ) { Text("أنا الأب — الرد على المكالمة", fontSize = 17.sp, fontWeight = FontWeight.Bold) }
+        }
     }
 }
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path android:pathData="M42 88 L24 114 L36 113 L48 92 Z" android:fillColor="#2E9E4F" />
+    <path android:pathData="M50 90 L46 116 L58 110 L58 92 Z" android:fillColor="#1F7FD1" />
+    <path android:pathData="M32,70 a26,30 0 1,0 52,0 a26,30 0 1,0 -52,0 Z" android:fillColor="#3CC261" />
+    <path android:pathData="M50,80 a14,18 0 1,0 28,0 a14,18 0 1,0 -28,0 Z" android:fillColor="#B9F07A" />
+    <path android:pathData="M52 16 Q58 4 66 14" android:strokeColor="#E53935" android:strokeWidth="5" android:strokeLineCap="round" />
+    <path android:pathData="M42,38 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 Z" android:fillColor="#3CC261" />
+    <group android:rotation="14" android:pivotX="44" android:pivotY="72">
+        <path android:pathData="M32,72 a12,24 0 1,0 24,0 a12,24 0 1,0 -24,0 Z" android:fillColor="#2E9E4F" />
+    </group>
+    <path android:pathData="M36 84 Q42 94 50 94" android:strokeColor="#E53935" android:strokeWidth="5" android:strokeLineCap="round" />
+    <path android:pathData="M64,34 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 Z" android:fillColor="#FFFFFF" />
+    <path android:pathData="M68.24,34 a4.96,4.96 0 1,0 9.92,0 a4.96,4.96 0 1,0 -9.92,0 Z" android:fillColor="#2B2550" />
+    <path android:pathData="M73.3,32.3 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0 Z" android:fillColor="#FFFFFF" />
+    <path android:pathData="M82 36 Q102 34 98 54 Q92 46 84 48 Z" android:fillColor="#FFC93C" />
+    <path android:pathData="M84 48 Q92 48 92 54 Q86 57 82 52 Z" android:fillColor="#2B2550" />
+    <path android:pathData="M57,48 a5,3.5 0 1,0 10,0 a5,3.5 0 1,0 -10,0 Z" android:fillColor="#FF7A93" android:fillAlpha="0.55" />
+    <path android:pathData="M56 98 L54 108 M68 98 L70 108" android:fillColor="#000000" android:strokeColor="#8A8A8A" android:strokeWidth="3.5" android:strokeLineCap="round" />
+</vector>

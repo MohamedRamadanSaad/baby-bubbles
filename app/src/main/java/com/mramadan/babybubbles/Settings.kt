@@ -2,6 +2,7 @@ package com.mramadan.babybubbles
 
 import android.content.Context
 import com.mramadan.babybubbles.game.GameMode
+import com.mramadan.babybubbles.game.SpeedLevel
 import java.util.Locale
 
 enum class SpeakLang(val locale: Locale) {
@@ -26,4 +27,9 @@ class Settings(context: Context) {
     var vibrate: Boolean
         get() = prefs.getBoolean("vibrate", true)
         set(value) = prefs.edit().putBoolean("vibrate", value).apply()
+
+    var speed: SpeedLevel
+        get() = runCatching { SpeedLevel.valueOf(prefs.getString("speed", null) ?: "NORMAL") }
+            .getOrDefault(SpeedLevel.NORMAL)
+        set(value) = prefs.edit().putString("speed", value.name).apply()
 }

@@ -5,57 +5,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.painterResource
 import com.mramadan.babybubbles.R
 import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.sin
 
-private val ColorsTop = Color(0xFFEFE9FF)
-private val ColorsBottom = Color(0xFFE3F3FF)
-private val SkyTop = Color(0xFFBFE6FF)
-private val SkyMid = Color(0xFFE4F5FF)
-private val SkyBottom = Color(0xFFF2FAFF)
-private val Sun = Color(0xFFFFD95A)
-private val NoteColor = Color(0xFF6A3DE8)
-
-/** (x fraction, y fraction, radius dp) of the twinkling dots in the colors backdrop. */
-private val Twinkles = listOf(
-    Triple(0.15f, 0.31f, 5f), Triple(0.85f, 0.50f, 7f), Triple(0.51f, 0.72f, 4f),
-    Triple(0.30f, 0.12f, 4f), Triple(0.72f, 0.90f, 6f), Triple(0.92f, 0.20f, 5f),
-)
-
-class SceneArt(
-    val cloud: Painter,
-    val hills: Painter,
-    val duck: Painter,
-    val snail: Painter,
-    val butterfly: Painter,
-)
-
 @Composable
-fun GameScreen(engine: GameEngine, modifier: Modifier = Modifier) {
+fun GameScreen(engine: GameEngine, characters: List<Character>, modifier: Modifier = Modifier) {
     var frame by remember { mutableLongStateOf(0L) }
     val density = LocalDensity.current.density
 
@@ -74,13 +52,17 @@ fun GameScreen(engine: GameEngine, modifier: Modifier = Modifier) {
         }
     }
 
-    val animalPainters = AnimalCatalog.map { rememberVectorPainter(ImageVector.vectorResource(it.drawable)) }
+    val painters = key(characters) { characters.map { painterResource(it.image) } }
     val scene = SceneArt(
-        cloud = rememberVectorPainter(ImageVector.vectorResource(R.drawable.scene_cloud)),
-        hills = rememberVectorPainter(ImageVector.vectorResource(R.drawable.scene_hills)),
-        duck = rememberVectorPainter(ImageVector.vectorResource(R.drawable.walker_duck)),
-        snail = rememberVectorPainter(ImageVector.vectorResource(R.drawable.walker_snail)),
-        butterfly = rememberVectorPainter(ImageVector.vectorResource(R.drawable.walker_butterfly)),
+        cloud = painterResource(R.drawable.scene_cloud),
+        hills = painterResource(R.drawable.scene_hills),
+        duck = painterResource(R.drawable.walker_duck),
+        snail = painterResource(R.drawable.walker_snail),
+        butterfly = painterResource(R.drawable.walker_butterfly),
+        car = painterResource(R.drawable.veh_car),
+        bird = painterResource(R.drawable.bird_sparrow),
+        fish = painterResource(R.drawable.sea_clownfish),
+        fish2 = painterResource(R.drawable.sea_bluetang),
     )
 
     Canvas(
@@ -105,67 +87,17 @@ fun GameScreen(engine: GameEngine, modifier: Modifier = Modifier) {
         val tick = frame // reading the frame state redraws the canvas every frame
         engine.resize(size.width, size.height, density)
 
-        when (engine.mode) {
-            GameMode.COLORS -> drawColorsBackdrop(engine)
-            GameMode.ANIMALS -> drawAnimalScene(engine, scene)
-        }
+        if (engine.mode == GameMode.SEA) drawSeaScene(engine, scene) else drawLandScene(engine, scene)
 
         for (b in engine.bubbles) {
-            if (b.animal >= 0) drawAnimalBubble(b, animalPainters[b.animal], density)
-            else drawColorBubbleState(b)
+            if (b.character >= 0 && b.character < painters.size) {
+                drawCharacterBubble(engine, b, painters[b.character], density)
+            } else {
+                drawColorBubbleState(b)
+            }
         }
 
         drawEffects(engine)
-    }
-}
-
-private fun DrawScope.drawColorsBackdrop(e: GameEngine) {
-    drawRect(Brush.verticalGradient(listOf(ColorsTop, ColorsBottom)))
-    Twinkles.forEachIndexed { i, (fx, fy, r) ->
-        drawCircle(
-            color = Color.White,
-            radius = r * e.density,
-            center = Offset(size.width * fx, size.height * fy),
-            alpha = 0.55f + 0.3f * sin(e.time * 1.5f + i),
-        )
-    }
-}
-
-private fun DrawScope.drawAnimalScene(e: GameEngine, art: SceneArt) {
-    drawRect(Brush.verticalGradient(0f to SkyTop, 0.7f to SkyMid, 1f to SkyBottom))
-
-    val d = e.density
-    val sunCenter = Offset(66f * d, 78f * d)
-    val pulse = 1f + 0.04f * sin(e.time * 1.2f)
-    drawCircle(Sun, radius = 72f * d * pulse, center = sunCenter, alpha = 0.14f)
-    drawCircle(Sun, radius = 56f * d * pulse, center = sunCenter, alpha = 0.28f)
-    drawCircle(Sun, radius = 42f * d, center = sunCenter)
-
-    for (c in e.clouds) {
-        translate(c.x, c.y) {
-            with(art.cloud) { draw(Size(120f * d * c.scale, 63f * d * c.scale), alpha = 0.95f) }
-        }
-    }
-
-    val hh = e.hillsHeight
-    translate(0f, size.height - hh) {
-        with(art.hills) { draw(Size(size.width, hh)) }
-    }
-
-    for (w in e.walkers) {
-        val rect = e.walkerRect(w)
-        val painter = when (w.kind) {
-            WalkerKind.DUCK -> art.duck
-            WalkerKind.SNAIL -> art.snail
-            WalkerKind.BUTTERFLY -> art.butterfly
-        }
-        val flip = if (w.dir < 0f) -1f else 1f
-        val flap = if (w.kind == WalkerKind.BUTTERFLY) 0.55f + 0.45f * abs(cos(w.t * 11f)) else 1f
-        scale(scaleX = flip * flap, scaleY = 1f, pivot = rect.center) {
-            translate(rect.left, rect.top) {
-                with(painter) { draw(rect.size) }
-            }
-        }
     }
 }
 
@@ -180,30 +112,96 @@ private fun DrawScope.drawColorBubbleState(b: Bubble) {
     )
 }
 
-private fun DrawScope.drawAnimalBubble(b: Bubble, painter: Painter, density: Float) {
+/** Draws a flag picture in a rounded 4:3 frame with a white border. */
+private fun DrawScope.drawFlag(painter: Painter, center: Offset, width: Float, alpha: Float, density: Float) {
+    val h = width * 0.75f
+    val rect = Rect(center.x - width / 2f, center.y - h / 2f, center.x + width / 2f, center.y + h / 2f)
+    val corner = CornerRadius(width * 0.08f)
+    val clip = Path().apply { addRoundRect(RoundRect(rect, corner)) }
+    clipPath(clip) {
+        translate(rect.left, rect.top) { with(painter) { draw(Size(width, h), alpha = alpha) } }
+    }
+    drawRoundRect(
+        color = Color.White,
+        topLeft = rect.topLeft,
+        size = rect.size,
+        cornerRadius = corner,
+        style = Stroke(2.5f * density),
+        alpha = alpha,
+    )
+}
+
+private fun DrawScope.drawCharacter(
+    e: GameEngine,
+    painter: Painter,
+    center: Offset,
+    side: Float,
+    alpha: Float,
+    density: Float,
+) {
+    if (e.mode.isFlag) drawFlag(painter, center, side * 1.02f, alpha, density)
+    else drawPainterCentered(painter, center, side, alpha)
+}
+
+private fun DrawScope.drawCharacterBubble(e: GameEngine, b: Bubble, painter: Painter, density: Float) {
     val c = Offset(b.x, b.y)
     val r = b.radius
+    val side = r * 1.5f
     if (!b.popping) {
         drawClearBubble(c, r, strokeWidth = 3f * density)
-        rotate(sin(b.age * 2f + b.wobblePhase) * 6f, pivot = c) {
-            drawPainterCentered(painter, c, r * 1.5f)
+        rotate(sin(b.age * 2f + b.wobblePhase) * (if (e.mode.isFlag) 3f else 6f), pivot = c) {
+            drawCharacter(e, painter, c, side, 1f, density)
         }
         drawBubbleGloss(c, r)
         return
     }
 
-    // Popped: the shell bursts and the animal jumps out, then fades.
-    val p = (b.popT / ANIMAL_POP).coerceIn(0f, 1f)
-    if (p < 0.22f) {
-        val q = p / 0.22f
+    val dur = popDuration(e.style)
+    val p = (b.popT / dur).coerceIn(0f, 1f)
+    val shellEnd = 0.22f * (0.8f / dur)
+    if (p < shellEnd) {
+        val q = p / shellEnd
         drawClearBubble(c, r * (1f + q * 0.4f), strokeWidth = 3f * density, alpha = 1f - q, shadow = false)
     }
-    val grow = (p / 0.35f).coerceAtMost(1f)
-    val ease = 1f - (1f - grow) * (1f - grow)
-    val side = r * 1.5f * (1f + 0.45f * ease)
-    val hop = -sin(PI.toFloat() * (p / 0.6f).coerceAtMost(1f)) * 34f * density
-    val alpha = if (p < 0.6f) 1f else 1f - (p - 0.6f) / 0.4f
-    drawPainterCentered(painter, Offset(c.x, c.y + hop), side, alpha)
+
+    when (e.style) {
+        PopStyle.JUMP -> {
+            // The character jumps out, grows a little, then fades.
+            val grow = (p / 0.35f).coerceAtMost(1f)
+            val ease = 1f - (1f - grow) * (1f - grow)
+            val hop = -sin(PI.toFloat() * (p / 0.6f).coerceAtMost(1f)) * 34f * density
+            val alpha = if (p < 0.6f) 1f else 1f - (p - 0.6f) / 0.4f
+            drawCharacter(e, painter, Offset(c.x, c.y + hop), side * (1f + 0.45f * ease), alpha, density)
+        }
+        PopStyle.DRIVE -> {
+            // Vehicles bounce once and drive off to the right.
+            val dx = p * p * size.width * 0.9f
+            val bounce = -sin(PI.toFloat() * (p / 0.3f).coerceAtMost(1f)) * 18f * density
+            val alpha = if (p < 0.7f) 1f else 1f - (p - 0.7f) / 0.3f
+            drawCharacter(e, painter, Offset(c.x + dx, c.y + bounce), side * 1.15f, alpha, density)
+        }
+        PopStyle.RISE -> {
+            // Flags are never burst: the bubble pops and the flag rises gently away.
+            val dy = -p * 150f * density
+            val alpha = if (p < 0.5f) 1f else 1f - (p - 0.5f) / 0.5f
+            rotate(sin(p * 8f) * 4f, pivot = Offset(c.x, c.y + dy)) {
+                drawCharacter(e, painter, Offset(c.x, c.y + dy), side * (1f + 0.15f * p), alpha, density)
+            }
+        }
+    }
+}
+
+/** A four-point twinkle star. */
+private fun DrawScope.drawSparkle(center: Offset, r: Float, color: Color, alpha: Float) {
+    val star = Path().apply {
+        moveTo(center.x, center.y - r)
+        quadraticTo(center.x, center.y, center.x + r, center.y)
+        quadraticTo(center.x, center.y, center.x, center.y + r)
+        quadraticTo(center.x, center.y, center.x - r, center.y)
+        quadraticTo(center.x, center.y, center.x, center.y - r)
+        close()
+    }
+    drawPath(star, color, alpha = alpha)
 }
 
 private fun DrawScope.drawEffects(e: GameEngine) {
@@ -225,8 +223,9 @@ private fun DrawScope.drawEffects(e: GameEngine) {
             alpha = (1f - p.life / PARTICLE_LIFE).coerceIn(0f, 1f),
         )
     }
-    for (n in e.notes) {
-        val q = (n.life / NOTE_LIFE).coerceIn(0f, 1f)
-        drawMusicNote(Offset(n.x, n.y), 34f * e.density, NoteColor, alpha = 1f - q)
+    for (s in e.sparkles) {
+        val q = (s.life / SPARKLE_LIFE).coerceIn(0f, 1f)
+        val r = 16f * e.density * (0.6f + 0.6f * sin(PI.toFloat() * q))
+        drawSparkle(Offset(s.x, s.y), r, s.color, alpha = 1f - q)
     }
 }

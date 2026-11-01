@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
 import android.speech.tts.TextToSpeech
+import androidx.annotation.RawRes
 import com.mramadan.babybubbles.R
 import java.util.Locale
 
@@ -19,32 +20,24 @@ class SoundBank(context: Context) {
         )
         .build()
 
-    private val notes = listOf(
-        R.raw.note_0, R.raw.note_1, R.raw.note_2, R.raw.note_3, R.raw.note_4,
-        R.raw.note_5, R.raw.note_6, R.raw.note_7, R.raw.note_8, R.raw.note_9,
-    ).map { pool.load(context, it, 1) }
-
     private val pop = pool.load(context, R.raw.pop, 1)
-    private val animals = AnimalCatalog.map { pool.load(context, it.sound, 1) }
+    private val ids: Map<Int, Int> = (
+        Catalog.all.map { it.sound }.filter { it != 0 } +
+            listOf(R.raw.snd_crunch, R.raw.snd_blub, R.raw.snd_bubbles, R.raw.snd_sparrow, R.raw.snd_car)
+        ).distinct().associateWith { pool.load(context, it, 1) }
 
-    fun playColor(colorIndex: Int) {
-        pool.play(pop, 0.35f, 0.35f, 1, 0, 1f)
-        pool.play(notes[colorIndex % notes.size], 0.6f, 0.6f, 1, 0, 1f)
+    fun playPop(rate: Float = 1f, volume: Float = 0.45f) {
+        pool.play(pop, volume, volume, 1, 0, rate)
     }
 
-    fun playAnimal(animalIndex: Int, withPop: Boolean = true) {
-        if (withPop) pool.play(pop, 0.2f, 0.2f, 1, 0, 1.3f)
-        pool.play(animals[animalIndex % animals.size], 0.85f, 0.85f, 2, 0, 1f)
-    }
-
-    fun playNote(index: Int) {
-        pool.play(notes[index % notes.size], 0.5f, 0.5f, 1, 0, 1f)
+    fun play(@RawRes res: Int, volume: Float = 0.85f) {
+        ids[res]?.let { pool.play(it, volume, volume, 2, 0, 1f) }
     }
 
     fun release() = pool.release()
 }
 
-/** Says animal names with the phone's own voice engine, if it has the language. */
+/** Speaks names and phrases with the phone's own voice engine, if it has the language. */
 class Speaker(context: Context) : TextToSpeech.OnInitListener {
     private val tts = TextToSpeech(context.applicationContext, this)
     private var ready = false
@@ -53,7 +46,7 @@ class Speaker(context: Context) : TextToSpeech.OnInitListener {
         ready = status == TextToSpeech.SUCCESS
         if (ready) {
             tts.setSpeechRate(0.85f)
-            tts.setPitch(1.15f)
+            tts.setPitch(1.1f)
         }
     }
 
@@ -61,7 +54,14 @@ class Speaker(context: Context) : TextToSpeech.OnInitListener {
         if (!ready) return
         val result = tts.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) return
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "animal-name")
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "speak")
+    }
+
+    /** Speaks only when nothing is being said, so fast taps don't chop phrases. */
+    fun sayIfIdle(text: String, locale: Locale): Boolean {
+        if (!ready || tts.isSpeaking) return false
+        say(text, locale)
+        return true
     }
 
     fun stop() {

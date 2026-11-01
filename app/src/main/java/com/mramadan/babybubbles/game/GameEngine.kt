@@ -7,31 +7,37 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
-/** Bright, high-contrast colors. Index i also selects musical note i. */
+/** Bright, high-contrast colors for colors mode. */
 val BubbleColors = listOf(
     Color(0xFFFF4D4D), Color(0xFFFFD93D), Color(0xFF4D96FF), Color(0xFF6BCB77),
     Color(0xFFF15BB5), Color(0xFF9B5DE5), Color(0xFF2EC4B6), Color(0xFFFF9F1C),
     Color(0xFFA3E635), Color(0xFF38BDF8),
 )
 
-enum class GameMode { COLORS, ANIMALS }
+enum class SpeedLevel(val factor: Float) { SLOW(0.55f), NORMAL(1f), FAST(1.6f) }
 
-enum class WalkerKind { DUCK, SNAIL, BUTTERFLY }
+enum class WalkerKind { DUCK, SNAIL, BUTTERFLY, CAR, BIRD, FISH, FISH2 }
 
 interface GameEvents {
     fun onColorPop(colorIndex: Int)
-    fun onAnimalPop(animalIndex: Int)
+    fun onCharacterPop(index: Int)
     fun onWalkerTap(kind: WalkerKind)
 }
 
 const val COLOR_POP = 0.22f
-const val ANIMAL_POP = 0.8f
 const val PARTICLE_LIFE = 0.6f
 const val RING_LIFE = 0.45f
-const val NOTE_LIFE = 0.9f
+const val SPARKLE_LIFE = 0.8f
 const val HOP_TIME = 0.5f
+
+fun popDuration(style: PopStyle) = when (style) {
+    PopStyle.JUMP -> 0.8f
+    PopStyle.DRIVE -> 0.9f
+    PopStyle.RISE -> 1.3f
+}
 
 class Bubble(
     var x: Float,
@@ -40,15 +46,14 @@ class Bubble(
     val vy: Float,
     val radius: Float,
     val colorIndex: Int,
-    /** Index into [AnimalCatalog], or -1 for a plain color bubble. */
-    val animal: Int,
+    /** Index into the mode's character list, or -1 for a plain color bubble. */
+    val character: Int,
     val wobblePhase: Float,
 ) {
     var age = 0f
     /** Negative while alive; seconds since the pop once popped. */
     var popT = -1f
     val popping: Boolean get() = popT >= 0f
-    val popDuration: Float get() = if (animal >= 0) ANIMAL_POP else COLOR_POP
 }
 
 class Particle(
@@ -66,11 +71,11 @@ class Ring(val x: Float, val y: Float, val radius: Float, val color: Color) {
     var life = 0f
 }
 
-class FloatingNote(val x: Float, var y: Float) {
+class Sparkle(val x: Float, var y: Float, val color: Color) {
     var life = 0f
 }
 
-class Walker(val kind: WalkerKind, var x: Float, var dir: Float, val speed: Float) {
+class Walker(val kind: WalkerKind, var x: Float, var dir: Float, val speed: Float, val lane: Float) {
     var t = 0f
     /** Negative when not hopping; seconds into the hop otherwise. */
     var hopT = -1f
@@ -85,11 +90,14 @@ class Cloud(var x: Float, val y: Float, val scale: Float, val speed: Float)
 class GameEngine(private val events: GameEvents) {
     var mode = GameMode.COLORS
         private set
+    var speed = SpeedLevel.NORMAL
+        private set
+    private var characterCount = 0
 
     val bubbles = mutableListOf<Bubble>()
     val particles = mutableListOf<Particle>()
     val rings = mutableListOf<Ring>()
-    val notes = mutableListOf<FloatingNote>()
+    val sparkles = mutableListOf<Sparkle>()
     val walkers = mutableListOf<Walker>()
     val clouds = mutableListOf<Cloud>()
 
@@ -103,25 +111,31 @@ class GameEngine(private val events: GameEvents) {
         private set
 
     private var spawnTimer = 0f
-    private var lastAnimal = -1
+    private var lastCharacter = -1
+    private var sceneReady = false
     private val rnd = Random.Default
 
     private val minAlive = 4
     private val maxAlive = 7
 
-    /** Height of the grassy hills at the bottom of the animals scene. */
+    /** Height of the grassy hills at the bottom of the land scenes. */
     val hillsHeight: Float get() = width * 140f / 390f
 
-    fun start(newMode: GameMode) {
+    val style: PopStyle get() = mode.popStyle
+
+    fun start(newMode: GameMode, count: Int, newSpeed: SpeedLevel) {
         mode = newMode
+        characterCount = count
+        speed = newSpeed
         bubbles.clear()
         particles.clear()
         rings.clear()
-        notes.clear()
+        sparkles.clear()
         walkers.clear()
         clouds.clear()
         spawnTimer = 0f
         time = 0f
+        sceneReady = false
     }
 
     fun resize(w: Float, h: Float, d: Float) {
@@ -133,9 +147,10 @@ class GameEngine(private val events: GameEvents) {
     fun update(dt: Float) {
         if (width <= 0f || height <= 0f) return
         time += dt
-        if (mode == GameMode.ANIMALS && walkers.isEmpty()) setupScene()
+        if (!sceneReady) setupScene()
 
-        spawnTimer -= dt
+        val sf = speed.factor
+        spawnTimer -= dt * sf
         val alive = bubbles.count { !it.popping }
         if (alive < minAlive || (spawnTimer <= 0f && alive < maxAlive)) {
             spawn()
@@ -148,11 +163,13 @@ class GameEngine(private val events: GameEvents) {
                 b.popT += dt
             } else {
                 b.age += dt
-                b.x += b.vx * dt + cos(b.age * 1.6f + b.wobblePhase) * wobble * dt
-                b.y += b.vy * dt + sin(b.age * 1.2f + b.wobblePhase) * wobble * 0.5f * dt
+                b.x += (b.vx * sf) * dt + cos(b.age * 1.6f + b.wobblePhase) * wobble * dt
+                b.y += (b.vy * sf) * dt + sin(b.age * 1.2f + b.wobblePhase) * wobble * 0.5f * dt
             }
         }
-        bubbles.removeAll { if (it.popping) it.popT > it.popDuration else isGone(it) }
+        separate(dt)
+        val dur = if (mode == GameMode.COLORS) COLOR_POP else popDuration(style)
+        bubbles.removeAll { if (it.popping) it.popT > dur else isGone(it) }
 
         val gravity = 500f * density
         for (p in particles) {
@@ -166,11 +183,11 @@ class GameEngine(private val events: GameEvents) {
         for (r in rings) r.life += dt
         rings.removeAll { it.life > RING_LIFE }
 
-        for (n in notes) {
-            n.life += dt
-            n.y -= 70f * density * dt
+        for (s in sparkles) {
+            s.life += dt
+            s.y -= 60f * density * dt
         }
-        notes.removeAll { it.life > NOTE_LIFE }
+        sparkles.removeAll { it.life > SPARKLE_LIFE }
 
         for (w in walkers) updateWalker(w, dt)
 
@@ -180,7 +197,36 @@ class GameEngine(private val events: GameEvents) {
         }
     }
 
-    /** Pops the top-most bubble under [p], or makes a background animal hop. */
+    /**
+     * Keeps bubbles from hiding each other: they may touch and overlap a little,
+     * but are gently pushed apart once more than about a fifth of them overlaps.
+     */
+    private fun separate(dt: Float) {
+        val k = (dt * 6f).coerceAtMost(1f)
+        for (i in bubbles.indices) {
+            val a = bubbles[i]
+            if (a.popping) continue
+            for (j in i + 1 until bubbles.size) {
+                val b = bubbles[j]
+                if (b.popping) continue
+                val dx = b.x - a.x
+                val dy = b.y - a.y
+                val minD = (a.radius + b.radius) * 0.8f
+                val d2 = dx * dx + dy * dy
+                if (d2 >= minD * minD) continue
+                val d = sqrt(d2).coerceAtLeast(0.01f)
+                val push = (minD - d) * 0.5f * k
+                val nx = if (d2 < 0.0001f) 1f else dx / d
+                val ny = if (d2 < 0.0001f) 0f else dy / d
+                a.x -= nx * push
+                a.y -= ny * push
+                b.x += nx * push
+                b.y += ny * push
+            }
+        }
+    }
+
+    /** Pops the top-most bubble under [p], or makes a background walker hop. */
     fun tap(p: Offset): Boolean {
         for (b in bubbles.asReversed()) {
             if (b.popping) continue
@@ -192,13 +238,11 @@ class GameEngine(private val events: GameEvents) {
                 return true
             }
         }
-        if (mode == GameMode.ANIMALS) {
-            for (w in walkers.asReversed()) {
-                if (w.hopT < 0f && walkerRect(w).inflate(10f * density).contains(p)) {
-                    w.hopT = 0f
-                    events.onWalkerTap(w.kind)
-                    return true
-                }
+        for (w in walkers.asReversed()) {
+            if (w.hopT < 0f && walkerRect(w).inflate(10f * density).contains(p)) {
+                w.hopT = 0f
+                events.onWalkerTap(w.kind)
+                return true
             }
         }
         return false
@@ -208,9 +252,12 @@ class GameEngine(private val events: GameEvents) {
         WalkerKind.DUCK -> 80f * density to 70f * density
         WalkerKind.SNAIL -> 90f * density to 60f * density
         WalkerKind.BUTTERFLY -> 54f * density to 45f * density
+        WalkerKind.CAR -> 96f * density to 96f * density
+        WalkerKind.BIRD -> 64f * density to 64f * density
+        WalkerKind.FISH, WalkerKind.FISH2 -> 72f * density to 72f * density
     }
 
-    /** Where a background animal is drawn this frame (also its touch area). */
+    /** Where a background walker is drawn this frame (also its touch area). */
     fun walkerRect(w: Walker): Rect {
         val (ww, hh) = walkerSize(w.kind)
         val d = density
@@ -219,9 +266,15 @@ class GameEngine(private val events: GameEvents) {
             WalkerKind.DUCK -> height - hillsHeight * 0.30f - hh - abs(sin(w.t * 9f)) * 3f * d
             WalkerKind.SNAIL -> height - hillsHeight * 0.08f - hh
             WalkerKind.BUTTERFLY -> height - hillsHeight - 50f * d + sin(w.t * 2.2f) * 22f * d - hh / 2f
+            WalkerKind.CAR -> roadCenterY() - hh * 0.72f - abs(sin(w.t * 14f)) * 1.5f * d
+            WalkerKind.BIRD -> height * w.lane + sin(w.t * 3f) * 14f * d - hh / 2f
+            WalkerKind.FISH, WalkerKind.FISH2 -> height * w.lane + sin(w.t * 1.6f) * 12f * d - hh / 2f
         }
         return Rect(w.x, top + hop, w.x + ww, top + hop + hh)
     }
+
+    /** Vertical middle of the road drawn in vehicles mode. */
+    fun roadCenterY(): Float = height - hillsHeight * 0.22f
 
     private fun updateWalker(w: Walker, dt: Float) {
         w.t += dt
@@ -231,33 +284,56 @@ class GameEngine(private val events: GameEvents) {
         }
         val (ww, _) = walkerSize(w.kind)
         w.x += w.dir * w.speed * dt
-        if (w.kind == WalkerKind.BUTTERFLY) {
-            if (w.x > width + ww) w.x = -ww
-        } else {
-            val margin = 8f * density
-            if (w.x < margin) {
-                w.x = margin
-                w.dir = 1f
-            } else if (w.x > width - margin - ww) {
-                w.x = width - margin - ww
-                w.dir = -1f
+        when (w.kind) {
+            WalkerKind.DUCK, WalkerKind.SNAIL -> {
+                val margin = 8f * density
+                if (w.x < margin) {
+                    w.x = margin
+                    w.dir = 1f
+                } else if (w.x > width - margin - ww) {
+                    w.x = width - margin - ww
+                    w.dir = -1f
+                }
+            }
+            else -> {
+                if (w.dir > 0f && w.x > width + ww) w.x = -ww
+                if (w.dir < 0f && w.x < -ww * 2f) w.x = width + ww * 0.5f
             }
         }
     }
 
     private fun setupScene() {
+        sceneReady = true
         val d = density
-        walkers += Walker(WalkerKind.DUCK, width * 0.12f, 1f, 38f * d)
-        walkers += Walker(WalkerKind.SNAIL, width * 0.62f, -1f, 12f * d)
-        walkers += Walker(WalkerKind.BUTTERFLY, width * 0.4f, 1f, 45f * d)
-        clouds += Cloud(width * 0.58f, 52f * d, 1f, 9f * d)
-        clouds += Cloud(width * 0.3f, 118f * d, 0.67f, 6f * d)
-        clouds += Cloud(-60f * d, 190f * d, 0.8f, 7f * d)
+        when (mode) {
+            GameMode.ANIMALS -> {
+                walkers += Walker(WalkerKind.DUCK, width * 0.12f, 1f, 38f * d, 0f)
+                walkers += Walker(WalkerKind.SNAIL, width * 0.62f, -1f, 12f * d, 0f)
+                walkers += Walker(WalkerKind.BUTTERFLY, width * 0.4f, 1f, 45f * d, 0f)
+            }
+            GameMode.VEHICLES -> walkers += Walker(WalkerKind.CAR, width * 0.1f, 1f, 70f * d, 0f)
+            GameMode.BIRDS -> {
+                walkers += Walker(WalkerKind.BIRD, width * 0.2f, 1f, 55f * d, 0.2f)
+                walkers += Walker(WalkerKind.BIRD, width * 0.7f, 1f, 40f * d, 0.33f)
+            }
+            GameMode.FRUITS, GameMode.FLAGS ->
+                walkers += Walker(WalkerKind.BUTTERFLY, width * 0.3f, 1f, 45f * d, 0f)
+            GameMode.SEA -> {
+                walkers += Walker(WalkerKind.FISH, width * 0.1f, 1f, 35f * d, 0.3f)
+                walkers += Walker(WalkerKind.FISH2, width * 0.8f, -1f, 28f * d, 0.62f)
+            }
+            GameMode.COLORS -> Unit
+        }
+        if (mode != GameMode.SEA) {
+            clouds += Cloud(width * 0.58f, 52f * d, 1f, 9f * d)
+            clouds += Cloud(width * 0.3f, 118f * d, 0.67f, 6f * d)
+            clouds += Cloud(-60f * d, 190f * d, 0.8f, 7f * d)
+        }
     }
 
     private fun pop(b: Bubble) {
         b.popT = 0f
-        if (b.animal >= 0) {
+        if (b.character >= 0) {
             burst(b, 14) { i ->
                 when (i % 3) {
                     0 -> BubbleColors[rnd.nextInt(BubbleColors.size)]
@@ -266,12 +342,13 @@ class GameEngine(private val events: GameEvents) {
                 }
             }
             rings += Ring(b.x, b.y, b.radius, Color.White)
-            events.onAnimalPop(b.animal)
+            events.onCharacterPop(b.character)
         } else {
             val color = BubbleColors[b.colorIndex]
             burst(b, 12) { color }
             rings += Ring(b.x, b.y, b.radius, color)
-            notes += FloatingNote(b.x + b.radius * 0.5f, b.y - b.radius * 0.6f)
+            sparkles += Sparkle(b.x + b.radius * 0.5f, b.y - b.radius * 0.6f, Color(0xFFFFD93D))
+            sparkles += Sparkle(b.x - b.radius * 0.45f, b.y - b.radius * 0.3f, Color.White)
             events.onColorPop(b.colorIndex)
         }
     }
@@ -292,52 +369,74 @@ class GameEngine(private val events: GameEvents) {
     }
 
     private fun isGone(b: Bubble): Boolean {
-        if (b.age > 40f) return true
+        if (b.age > 60f) return true
         if (b.age < 2f) return false
         val m = b.radius * 1.5f
         return b.x < -m || b.x > width + m || b.y < -m || b.y > height + m
     }
 
-    private fun nextAnimal(): Int {
+    private fun nextCharacter(): Int {
+        if (characterCount <= 0) return -1
         var a: Int
         do {
-            a = rnd.nextInt(AnimalCatalog.size)
-        } while (a == lastAnimal && AnimalCatalog.size > 1)
-        lastAnimal = a
+            a = rnd.nextInt(characterCount)
+        } while (a == lastCharacter && characterCount > 1)
+        lastCharacter = a
         return a
     }
 
-    private fun spawn() {
-        val animals = mode == GameMode.ANIMALS
-        val r = if (animals) (66f + rnd.nextFloat() * 24f) * density else (60f + rnd.nextFloat() * 30f) * density
-        val speed = (70f + rnd.nextFloat() * 70f) * density
-        val drift = (rnd.nextFloat() - 0.5f) * 40f * density
-        val color = rnd.nextInt(BubbleColors.size)
-        val animal = if (animals) nextAnimal() else -1
-        val phase = rnd.nextFloat() * 6.28f
-        val side = rnd.nextInt(10)
+    private class Spawn(val x: Float, val y: Float, val vx: Float, val vy: Float)
 
-        val bubble = when {
-            side < 6 -> Bubble( // from the bottom, floating up
-                x = r + rnd.nextFloat() * (width - 2 * r).coerceAtLeast(1f),
-                y = height + r, vx = drift, vy = -speed,
-                radius = r, colorIndex = color, animal = animal, wobblePhase = phase,
+    private fun candidate(r: Float, speed: Float, drift: Float): Spawn {
+        val side = rnd.nextInt(10)
+        return when {
+            side < 6 -> Spawn( // from the bottom, floating up
+                r + rnd.nextFloat() * (width - 2 * r).coerceAtLeast(1f), height + r, drift, -speed,
             )
             side < 8 -> { // from the left or right edge
                 val fromLeft = rnd.nextBoolean()
-                Bubble(
-                    x = if (fromLeft) -r else width + r,
-                    y = r + rnd.nextFloat() * (height - 2 * r).coerceAtLeast(1f),
-                    vx = if (fromLeft) speed else -speed, vy = drift,
-                    radius = r, colorIndex = color, animal = animal, wobblePhase = phase,
+                Spawn(
+                    if (fromLeft) -r else width + r,
+                    r + rnd.nextFloat() * (height * 0.7f - 2 * r).coerceAtLeast(1f),
+                    if (fromLeft) speed else -speed, drift,
                 )
             }
-            else -> Bubble( // from the top, drifting down
-                x = r + rnd.nextFloat() * (width - 2 * r).coerceAtLeast(1f),
-                y = -r, vx = drift, vy = speed * 0.8f,
-                radius = r, colorIndex = color, animal = animal, wobblePhase = phase,
+            else -> Spawn( // from the top, drifting down
+                r + rnd.nextFloat() * (width - 2 * r).coerceAtLeast(1f), -r, drift, speed * 0.8f,
             )
         }
-        bubbles += bubble
+    }
+
+    private fun spawn() {
+        val withCharacter = mode != GameMode.COLORS
+        val r = if (withCharacter) (66f + rnd.nextFloat() * 24f) * density else (60f + rnd.nextFloat() * 30f) * density
+        val speed = (70f + rnd.nextFloat() * 70f) * density
+        val drift = (rnd.nextFloat() - 0.5f) * 40f * density
+
+        // Try several entry points and take the one farthest from every bubble
+        // already on screen, so new bubbles come from different places.
+        var best = candidate(r, speed, drift)
+        var bestScore = -1f
+        repeat(8) {
+            val c = candidate(r, speed, drift)
+            var nearest = Float.MAX_VALUE
+            for (o in bubbles) {
+                if (o.popping) continue
+                val dx = o.x - c.x
+                val dy = o.y - c.y
+                nearest = minOf(nearest, sqrt(dx * dx + dy * dy) - o.radius)
+            }
+            if (nearest > bestScore) {
+                bestScore = nearest
+                best = c
+            }
+        }
+
+        bubbles += Bubble(
+            x = best.x, y = best.y, vx = best.vx, vy = best.vy, radius = r,
+            colorIndex = rnd.nextInt(BubbleColors.size),
+            character = if (withCharacter) nextCharacter() else -1,
+            wobblePhase = rnd.nextFloat() * 6.28f,
+        )
     }
 }
