@@ -1,8 +1,12 @@
 package com.mramadan.babybubbles
 
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -10,29 +14,51 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.mramadan.babybubbles.game.AnimalCatalog
+import com.mramadan.babybubbles.game.DUCK_INDEX
 import com.mramadan.babybubbles.game.GameEngine
+import com.mramadan.babybubbles.game.GameEvents
+import com.mramadan.babybubbles.game.GameMode
 import com.mramadan.babybubbles.game.GameScreen
 import com.mramadan.babybubbles.game.SoundBank
+import com.mramadan.babybubbles.game.Speaker
+import com.mramadan.babybubbles.game.WalkerKind
 import com.mramadan.babybubbles.parent.HomeScreen
 import com.mramadan.babybubbles.parent.ParentGate
+import com.mramadan.babybubbles.ui.BabyTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), GameEvents {
 
     private var playing by mutableStateOf(false)
     private var showGate by mutableStateOf(false)
+    private var mode by mutableStateOf(GameMode.COLORS)
+    private var speakLang by mutableStateOf(SpeakLang.AR)
+    private var vibrate by mutableStateOf(true)
 
+    private lateinit var settings: Settings
     private lateinit var sounds: SoundBank
+    private lateinit var speaker: Speaker
     private lateinit var engine: GameEngine
 
-    // Parent key: hold Volume Up + Volume Down together for 3 seconds.
     private val handler = Handler(Looper.getMainLooper())
+    private var pendingName: Runnable? = null
+
+    private val vibrator: Vibrator? by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Vibrator::class.java)
+        }
+    }
+
+    // Parent key: hold Volume Up + Volume Down together for 3 seconds.
     private var volUpDown = false
     private var volDownDown = false
     private var holdArmed = false
@@ -47,12 +73,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        settings = Settings(this)
+        mode = settings.mode
+        speakLang = settings.speakLang
+        vibrate = settings.vibrate
+
         sounds = SoundBank(this)
-        engine = GameEngine { colorIndex -> sounds.playPop(colorIndex) }
+        speaker = Speaker(this)
+        engine = GameEngine(this)
         onBackPressedDispatcher.addCallback(this, blockBack)
 
         setContent {
-            MaterialTheme {
+            BabyTheme {
                 if (playing) {
                     Box {
                         GameScreen(engine)
@@ -64,14 +96,60 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 } else {
-                    HomeScreen(onStart = { startPlay() })
+                    HomeScreen(
+                        mode = mode,
+                        onModeChange = { mode = it; settings.mode = it },
+                        speakLang = speakLang,
+                        onSpeakLangChange = { speakLang = it; settings.speakLang = it },
+                        vibrate = vibrate,
+                        onVibrateChange = { vibrate = it; settings.vibrate = it },
+                        onStart = { startPlay() },
+                    )
                 }
             }
         }
     }
 
+    // ---- Game events -------------------------------------------------------
+
+    override fun onColorPop(colorIndex: Int) {
+        sounds.playColor(colorIndex)
+        haptic()
+    }
+
+    override fun onAnimalPop(animalIndex: Int) {
+        sounds.playAnimal(animalIndex)
+        haptic()
+        pendingName?.let { handler.removeCallbacks(it) }
+        val info = AnimalCatalog[animalIndex]
+        val lang = speakLang
+        val say = Runnable {
+            speaker.say(if (lang == SpeakLang.AR) info.arabic else info.english, lang.locale)
+        }
+        pendingName = say
+        handler.postDelayed(say, 850)
+    }
+
+    override fun onWalkerTap(kind: WalkerKind) {
+        when (kind) {
+            WalkerKind.DUCK -> sounds.playAnimal(DUCK_INDEX, withPop = false)
+            WalkerKind.SNAIL -> sounds.playNote(2)
+            WalkerKind.BUTTERFLY -> sounds.playNote(7)
+        }
+        haptic()
+    }
+
+    private fun haptic() {
+        if (!vibrate) return
+        runCatching {
+            vibrator?.vibrate(VibrationEffect.createOneShot(18L, VibrationEffect.DEFAULT_AMPLITUDE))
+        }
+    }
+
+    // ---- Play session and lock ---------------------------------------------
+
     private fun startPlay() {
-        engine.reset()
+        engine.start(mode)
         playing = true
         blockBack.isEnabled = true
         hideSystemBars()
@@ -84,6 +162,7 @@ class MainActivity : ComponentActivity() {
         playing = false
         blockBack.isEnabled = false
         resetVolumeHold()
+        cancelPendingName()
         runCatching { stopLockTask() }
         showSystemBars()
     }
@@ -115,12 +194,20 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         resetVolumeHold()
+        cancelPendingName()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         sounds.release()
+        speaker.release()
         super.onDestroy()
+    }
+
+    private fun cancelPendingName() {
+        pendingName?.let { handler.removeCallbacks(it) }
+        pendingName = null
+        speaker.stop()
     }
 
     private fun resetVolumeHold() {
