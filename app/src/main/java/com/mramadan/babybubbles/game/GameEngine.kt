@@ -115,15 +115,17 @@ class GameEngine(private val events: GameEvents) {
     private var sceneReady = false
     private val rnd = Random.Default
 
-    private val minAlive = 4
-    private val maxAlive = 7
+    private var maxAlive = 6
+    /** Below this many, a new bubble comes straight away so the screen never feels empty. */
+    private val minAlive: Int get() = ((maxAlive * 0.6f) + 0.5f).toInt().coerceIn(1, maxAlive)
 
     /** Height of the grassy hills at the bottom of the land scenes. */
     val hillsHeight: Float get() = width * 140f / 390f
 
     val style: PopStyle get() = mode.popStyle
 
-    fun start(newMode: GameMode, count: Int, newSpeed: SpeedLevel) {
+    fun start(newMode: GameMode, count: Int, newSpeed: SpeedLevel, maxBubbles: Int) {
+        maxAlive = maxBubbles.coerceIn(1, 12)
         mode = newMode
         characterCount = count
         speed = newSpeed

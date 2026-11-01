@@ -394,7 +394,7 @@ class MainActivity : ComponentActivity(), GameEvents {
     private fun startPlay() {
         playMode = prefs.mode
         characters = Catalog.forMode(playMode)
-        engine.start(playMode, characters.size, prefs.speed)
+        engine.start(playMode, characters.size, prefs.speed, prefs.maxBubbles)
         praiseIndex = 0
         ringing = false
         azkarPausedForCall = false

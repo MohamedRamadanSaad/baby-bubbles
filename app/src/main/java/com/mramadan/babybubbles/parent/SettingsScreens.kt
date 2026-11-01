@@ -171,6 +171,16 @@ fun SettingsScreen(
                 }
             }
             HorizontalDivider(color = Palette.Divider)
+            Text("أقصى عدد للفقاعات على الشاشة", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Palette.Ink,
+                modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+            SegmentGroup {
+                for (n in listOf(2, 3, 4, 6, 8, 10)) {
+                    Segment(n.arabicDigits(), prefs.maxBubbles == n, minWidth = 42.dp) { prefs.maxBubbles = n }
+                }
+            }
+            Text("عدد أقل يناسب الأطفال الأصغر سنًّا.", fontSize = 13.sp, color = Palette.Muted,
+                modifier = Modifier.padding(top = 6.dp, bottom = 8.dp))
+            HorizontalDivider(color = Palette.Divider)
             SettingRow("الأصوات") {
                 SegmentGroup {
                     Segment("فرقعات فقط", prefs.soundType == SoundType.POPS_ONLY) { prefs.soundType = SoundType.POPS_ONLY }

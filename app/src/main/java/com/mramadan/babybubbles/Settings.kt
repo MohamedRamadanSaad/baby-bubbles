@@ -72,6 +72,11 @@ class Settings(context: Context) {
         get() = enumPref("azkarVolume", AzkarVolume.MEDIUM)
         set(value) = put("azkarVolume", value.name)
 
+    /** Most bubbles on screen at once. */
+    var maxBubbles: Int
+        get() = prefs.getInt("maxBubbles", 6)
+        set(value) = prefs.edit().putInt("maxBubbles", value).apply()
+
     var azkarWhich: AzkarWhich
         get() = enumPref("azkarWhich", AzkarWhich.AUTO)
         set(value) = put("azkarWhich", value.name)
@@ -141,6 +146,11 @@ class LivePrefs(private val store: Settings) {
     var azkarVolume: AzkarVolume
         get() = _azkarVolume.value
         set(v) { _azkarVolume.value = v; store.azkarVolume = v }
+
+    private val _maxBubbles = androidx.compose.runtime.mutableStateOf(store.maxBubbles)
+    var maxBubbles: Int
+        get() = _maxBubbles.value
+        set(v) { _maxBubbles.value = v; store.maxBubbles = v }
 
     private val _azkarWhich = androidx.compose.runtime.mutableStateOf(store.azkarWhich)
     var azkarWhich: AzkarWhich

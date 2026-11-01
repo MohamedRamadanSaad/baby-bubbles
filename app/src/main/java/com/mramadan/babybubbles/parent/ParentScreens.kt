@@ -357,10 +357,10 @@ private fun RowScope.ModeCard(
 }
 
 @Composable
-internal fun Segment(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun Segment(label: String, selected: Boolean, minWidth: androidx.compose.ui.unit.Dp = 52.dp, onClick: () -> Unit) {
     Box(
         Modifier
-            .defaultMinSize(minWidth = 52.dp)
+            .defaultMinSize(minWidth = minWidth)
             .height(36.dp)
             .clip(CircleShape)
             .background(if (selected) Palette.Purple else Color.Transparent)
