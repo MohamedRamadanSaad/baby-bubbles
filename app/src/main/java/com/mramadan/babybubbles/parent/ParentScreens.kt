@@ -186,11 +186,7 @@ fun HomeScreen(
     ) {
         Box(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Canvas(Modifier.size(96.dp, 70.dp)) {
-                    drawColorBubble(Offset(26.dp.toPx(), 40.dp.toPx()), 22.dp.toPx(), Yellow, shadow = false)
-                    drawColorBubble(Offset(70.dp.toPx(), 44.dp.toPx()), 20.dp.toPx(), Teal, shadow = false)
-                    drawColorBubble(Offset(49.dp.toPx(), 25.dp.toPx()), 25.dp.toPx(), Violet, shadow = false)
-                }
+                AppLogo(Modifier.size(88.dp))
                 Text("فقاعات", fontSize = 44.sp, lineHeight = 50.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Purple)
                 Text("لعب آمن لأصغر الأيدي", fontSize = 16.sp, color = Palette.Muted)
             }
@@ -585,5 +581,25 @@ fun ParentGate(onSuccess: () -> Unit, onDismiss: () -> Unit) = Rtl {
                 )
             }
         }
+    }
+}
+
+
+/** The app icon: purple tile with the smiling bubble. */
+@Composable
+fun AppLogo(modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = Palette.Purple, spotColor = Palette.Purple)
+            .clip(RoundedCornerShape(24.dp))
+    ) {
+        androidx.compose.foundation.Image(
+            painterResource(R.drawable.ic_launcher_background), contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize(),
+        )
+        androidx.compose.foundation.Image(
+            painterResource(R.drawable.ic_launcher_foreground), contentDescription = "فقاعات",
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize().scale(1.35f),
+        )
     }
 }

@@ -101,11 +101,16 @@ class MainActivity : ComponentActivity(), GameEvents {
         afterMicGranted = null
     }
 
+    private var pickingSlot: AzkarSlot? = null
+    private var recordingSlot by mutableStateOf<AzkarSlot?>(null)
+    private var previewSlot by mutableStateOf<AzkarSlot?>(null)
+
     private val pickAudio = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        val slot = pickingSlot ?: return@registerForActivityResult
+        pickingSlot = null
         if (uri != null) {
             runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            prefs.azkarUri = uri.toString()
-            prefs.azkarName = displayName(uri)
+            prefs.setSlot(slot, uri.toString(), displayName(uri))
             prefs.azkarOn = true
         }
     }
@@ -181,9 +186,24 @@ class MainActivity : ComponentActivity(), GameEvents {
                         )
                         Screen.Settings -> SettingsScreen(
                             prefs = prefs,
-                            onPickAzkar = { runCatching { pickAudio.launch(arrayOf("audio/*")) } },
-                            onRecordings = { screen = Screen.RecordHome },
-                            onBack = { screen = Screen.Home },
+                            slotStatus = ::slotStatus,
+                            recordingSlot = recordingSlot,
+                            previewSlot = previewSlot,
+                            onPickAzkar = { slot ->
+                                stopAzkarEditing()
+                                pickingSlot = slot
+                                runCatching { pickAudio.launch(arrayOf("audio/*")) }
+                            },
+                            onRecordAzkar = ::toggleAzkarRecording,
+                            onPreviewAzkar = ::toggleAzkarPreview,
+                            onRecordings = {
+                                stopAzkarEditing()
+                                screen = Screen.RecordHome
+                            },
+                            onBack = {
+                                stopAzkarEditing()
+                                screen = Screen.Home
+                            },
                         )
                         Screen.RecordHome -> RecordHomeScreen(
                             store = voices,
@@ -221,6 +241,59 @@ class MainActivity : ComponentActivity(), GameEvents {
             return false // the parent taps record again once allowed
         }
         return recorder.start(voices.file(recordParent, mode, index))
+    }
+
+    // ---- Morning and evening azkar ----------------------------------------
+
+    /** A picked file wins; otherwise the parent's own recording; otherwise nothing. */
+    private fun slotSource(slot: AzkarSlot): Uri? =
+        prefs.slotUri(slot)?.let { Uri.parse(it) }
+            ?: voices.azkarFile(slot).takeIf { voices.hasAzkar(slot) }?.let { Uri.fromFile(it) }
+
+    private fun slotStatus(slot: AzkarSlot): String? = when {
+        prefs.slotUri(slot) != null -> "ملف: " + (prefs.slotName(slot) ?: "ملف صوتي")
+        voices.hasAzkar(slot) -> "تسجيل بصوتك"
+        else -> null
+    }
+
+    private fun toggleAzkarRecording(slot: AzkarSlot) {
+        if (recordingSlot == slot) {
+            if (recorder.stop()) {
+                prefs.setSlot(slot, null, null) // the new recording replaces any picked file
+                prefs.azkarOn = true
+            }
+            recordingSlot = null
+            return
+        }
+        stopAzkarEditing()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        if (recorder.start(voices.azkarFile(slot))) recordingSlot = slot
+    }
+
+    private fun toggleAzkarPreview(slot: AzkarSlot) {
+        if (previewSlot == slot) {
+            azkar.stop()
+            previewSlot = null
+            return
+        }
+        stopAzkarEditing()
+        val src = slotSource(slot) ?: return
+        if (azkar.start(src, prefs.azkarVolume.level.coerceAtLeast(0.5f))) previewSlot = slot
+    }
+
+    private fun stopAzkarEditing() {
+        if (recordingSlot != null) {
+            val slot = recordingSlot!!
+            if (recorder.stop()) prefs.setSlot(slot, null, null)
+            recordingSlot = null
+        }
+        if (previewSlot != null) {
+            azkar.stop()
+            previewSlot = null
+        }
     }
 
     private fun displayName(uri: Uri): String =
@@ -330,8 +403,13 @@ class MainActivity : ComponentActivity(), GameEvents {
         hideSystemBars()
         handler.removeCallbacks(callWatch)
         handler.post(callWatch)
-        val uri = prefs.azkarUri
-        if (prefs.azkarOn && uri != null) azkar.start(Uri.parse(uri), prefs.azkarVolume.level)
+        stopAzkarEditing()
+        if (prefs.azkarOn) {
+            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+            val slot = prefs.currentSlot(hour)
+            (slotSource(slot) ?: AzkarSlot.entries.firstNotNullOfOrNull { slotSource(it) })
+                ?.let { azkar.start(it, prefs.azkarVolume.level) }
+        }
         // Without device-owner rights this becomes screen pinning: the system asks once to confirm.
         runCatching { startLockTask() }
     }
@@ -388,6 +466,8 @@ class MainActivity : ComponentActivity(), GameEvents {
         super.onPause()
         resetVolumeHold()
         cancelPendingName()
+        // A long azkar recording is kept if the parent leaves the app midway.
+        stopAzkarEditing()
         if (recorder.isRecording) recorder.stop(save = false)
         if (playing) azkar.pause()
     }

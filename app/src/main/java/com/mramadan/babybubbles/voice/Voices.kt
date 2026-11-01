@@ -20,6 +20,12 @@ enum class Parent(val folder: String, val arabic: String) {
  */
 class VoiceStore(context: Context) {
     private val root = File(context.filesDir, "voices")
+    private val azkarRoot = File(context.filesDir, "azkar")
+
+    /** The parent's own recording of a whole azkar set. */
+    fun azkarFile(slot: com.mramadan.babybubbles.AzkarSlot): File = File(azkarRoot, "${slot.key}.m4a")
+
+    fun hasAzkar(slot: com.mramadan.babybubbles.AzkarSlot): Boolean = azkarFile(slot).let { it.exists() && it.length() > 0 }
 
     fun file(parent: Parent, mode: GameMode, index: Int): File =
         File(File(root, parent.folder), "${mode.name.lowercase()}_$index.m4a")

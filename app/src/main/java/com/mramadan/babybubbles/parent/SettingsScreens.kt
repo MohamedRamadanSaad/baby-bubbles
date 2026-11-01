@@ -57,7 +57,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mramadan.babybubbles.AzkarSlot
 import com.mramadan.babybubbles.AzkarVolume
+import com.mramadan.babybubbles.AzkarWhich
 import com.mramadan.babybubbles.LivePrefs
 import com.mramadan.babybubbles.NameVoice
 import com.mramadan.babybubbles.SoundType
@@ -138,7 +140,12 @@ private fun PurpleSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 fun SettingsScreen(
     prefs: LivePrefs,
-    onPickAzkar: () -> Unit,
+    slotStatus: (AzkarSlot) -> String?,
+    recordingSlot: AzkarSlot?,
+    previewSlot: AzkarSlot?,
+    onPickAzkar: (AzkarSlot) -> Unit,
+    onRecordAzkar: (AzkarSlot) -> Unit,
+    onPreviewAzkar: (AzkarSlot) -> Unit,
     onRecordings: () -> Unit,
     onBack: () -> Unit,
 ) = Rtl {
@@ -220,30 +227,32 @@ fun SettingsScreen(
         }
 
         SectionCard("الأذكار في الخلفية") {
-            SettingRow("تشغيل الأذكار أثناء اللعب") {
-                PurpleSwitch(prefs.azkarOn && prefs.azkarUri != null) { on ->
-                    if (on && prefs.azkarUri == null) onPickAzkar() else prefs.azkarOn = on
+            SettingRow("تشغيل الأذكار أثناء اللعب") { PurpleSwitch(prefs.azkarOn) { prefs.azkarOn = it } }
+            HorizontalDivider(color = Palette.Divider)
+            SettingRow("أي أذكار") {
+                SegmentGroup {
+                    Segment("الصباح", prefs.azkarWhich == AzkarWhich.MORNING) { prefs.azkarWhich = AzkarWhich.MORNING }
+                    Segment("المساء", prefs.azkarWhich == AzkarWhich.EVENING) { prefs.azkarWhich = AzkarWhich.EVENING }
+                    Segment("حسب الوقت", prefs.azkarWhich == AzkarWhich.AUTO) { prefs.azkarWhich = AzkarWhich.AUTO }
                 }
             }
-            HorizontalDivider(color = Palette.Divider)
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    prefs.azkarName ?: "لم يُختر ملف بعد",
-                    fontSize = 14.sp,
-                    color = if (prefs.azkarName == null) Palette.Muted else Palette.Ink,
-                    maxLines = 2,
-                    modifier = Modifier.weight(1f),
+            if (prefs.azkarWhich == AzkarWhich.AUTO) {
+                Text("الصباح حتى الثالثة عصرًا، والمساء بعدها.", fontSize = 13.sp, color = Palette.Muted,
+                    modifier = Modifier.padding(bottom = 6.dp))
+            }
+            for (slot in AzkarSlot.entries) {
+                HorizontalDivider(color = Palette.Divider)
+                AzkarSlotRow(
+                    title = slot.arabic,
+                    status = slotStatus(slot),
+                    recording = recordingSlot == slot,
+                    previewing = previewSlot == slot,
+                    canPreview = slotStatus(slot) != null,
+                    busy = recordingSlot != null && recordingSlot != slot,
+                    onPick = { onPickAzkar(slot) },
+                    onRecord = { onRecordAzkar(slot) },
+                    onPreview = { onPreviewAzkar(slot) },
                 )
-                Button(
-                    onClick = onPickAzkar,
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = Palette.Track, contentColor = Palette.Purple),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                ) { Text("اختيار ملف", fontWeight = FontWeight.Bold) }
             }
             HorizontalDivider(color = Palette.Divider)
             SettingRow("مستوى صوت الأذكار") {
@@ -254,7 +263,7 @@ fun SettingsScreen(
                 }
             }
             Text(
-                "اختر ملف أذكار صوتيًا محفوظًا على هاتفك، مثل أذكار الصباح بصوت الشيخ مشاري العفاسي بعد تحميلها، فتعمل بهدوء خلف اللعب وتتكرر.",
+                "لكل من الصباح والمساء: سجّلها بصوتك، أو اختر ملفًا صوتيًا محفوظًا على هاتفك. تعمل بهدوء خلف اللعب وتتكرر، وتتوقف أثناء رنين المكالمة.",
                 fontSize = 13.sp, lineHeight = 19.sp, color = Palette.Muted,
                 modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
             )
@@ -491,5 +500,62 @@ private fun RoundButton(
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.size(22.dp), onDraw = icon)
+    }
+}
+
+
+@Composable
+private fun AzkarSlotRow(
+    title: String,
+    status: String?,
+    recording: Boolean,
+    previewing: Boolean,
+    canPreview: Boolean,
+    busy: Boolean,
+    onPick: () -> Unit,
+    onRecord: () -> Unit,
+    onPreview: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Palette.Ink)
+            Text(
+                when {
+                    recording -> "جارٍ التسجيل…"
+                    status != null -> status
+                    else -> "لم تُحدد بعد"
+                },
+                fontSize = 13.sp,
+                color = when {
+                    recording -> Color(0xFFD93636)
+                    status != null -> Color(0xFF2E9E4F)
+                    else -> Palette.Muted
+                },
+                maxLines = 1,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SmallAction(if (recording) "إيقاف التسجيل" else "تسجيل بصوتي", enabled = !busy && !previewing,
+                tint = if (recording) Color(0xFFFF4D4D) else Palette.Purple, onClick = onRecord)
+            SmallAction("اختيار ملف", enabled = !recording && !busy, tint = Palette.Purple, onClick = onPick)
+            SmallAction(if (previewing) "إيقاف" else "استماع", enabled = canPreview && !recording && !busy,
+                tint = Color(0xFF2E9E4F), onClick = onPreview)
+        }
+    }
+}
+
+@Composable
+private fun SmallAction(label: String, enabled: Boolean, tint: Color, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .alpha(if (enabled) 1f else 0.4f)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.12f))
+            .selectable(selected = false, enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = tint)
     }
 }

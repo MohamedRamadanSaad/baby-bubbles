@@ -18,6 +18,11 @@ enum class NameVoice { DEVICE, DAD, MOM, BOTH }
 
 enum class AzkarVolume(val level: Float) { LOW(0.18f), MEDIUM(0.32f), HIGH(0.5f) }
 
+/** Which azkar play behind the game; AUTO picks morning before 3 pm, evening after. */
+enum class AzkarWhich { MORNING, EVENING, AUTO }
+
+enum class AzkarSlot(val key: String, val arabic: String) { MORNING("morning", "أذكار الصباح"), EVENING("evening", "أذكار المساء") }
+
 /** Parent choices, kept on the device only. */
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -66,6 +71,23 @@ class Settings(context: Context) {
     var azkarVolume: AzkarVolume
         get() = enumPref("azkarVolume", AzkarVolume.MEDIUM)
         set(value) = put("azkarVolume", value.name)
+
+    var azkarWhich: AzkarWhich
+        get() = enumPref("azkarWhich", AzkarWhich.AUTO)
+        set(value) = put("azkarWhich", value.name)
+
+    /** A picked file for a slot (an earlier single file counts as the morning one). */
+    fun slotUri(slot: AzkarSlot): String? =
+        prefs.getString("${slot.key}Uri", null) ?: if (slot == AzkarSlot.MORNING) prefs.getString("azkarUri", null) else null
+
+    fun slotName(slot: AzkarSlot): String? =
+        prefs.getString("${slot.key}Name", null) ?: if (slot == AzkarSlot.MORNING) prefs.getString("azkarName", null) else null
+
+    fun setSlot(slot: AzkarSlot, uri: String?, name: String?) {
+        prefs.edit().putString("${slot.key}Uri", uri).putString("${slot.key}Name", name)
+            .apply { if (slot == AzkarSlot.MORNING) remove("azkarUri").remove("azkarName") }
+            .apply()
+    }
 }
 
 /** The same settings as Compose state, so screens update as the parent changes them. */
@@ -119,4 +141,28 @@ class LivePrefs(private val store: Settings) {
     var azkarVolume: AzkarVolume
         get() = _azkarVolume.value
         set(v) { _azkarVolume.value = v; store.azkarVolume = v }
+
+    private val _azkarWhich = androidx.compose.runtime.mutableStateOf(store.azkarWhich)
+    var azkarWhich: AzkarWhich
+        get() = _azkarWhich.value
+        set(v) { _azkarWhich.value = v; store.azkarWhich = v }
+
+    private val slotUris = AzkarSlot.entries.associateWith { androidx.compose.runtime.mutableStateOf(store.slotUri(it)) }
+    private val slotNames = AzkarSlot.entries.associateWith { androidx.compose.runtime.mutableStateOf(store.slotName(it)) }
+
+    fun slotUri(slot: AzkarSlot): String? = slotUris.getValue(slot).value
+    fun slotName(slot: AzkarSlot): String? = slotNames.getValue(slot).value
+
+    fun setSlot(slot: AzkarSlot, uri: String?, name: String?) {
+        slotUris.getValue(slot).value = uri
+        slotNames.getValue(slot).value = name
+        store.setSlot(slot, uri, name)
+    }
+
+    /** The slot to play right now. */
+    fun currentSlot(hour: Int): AzkarSlot = when (azkarWhich) {
+        AzkarWhich.MORNING -> AzkarSlot.MORNING
+        AzkarWhich.EVENING -> AzkarSlot.EVENING
+        AzkarWhich.AUTO -> if (hour in 3..14) AzkarSlot.MORNING else AzkarSlot.EVENING
+    }
 }
