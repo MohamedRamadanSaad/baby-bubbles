@@ -1,0 +1,16 @@
+name: Sounds - discover
+
+on:
+  workflow_dispatch:
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Search Wikimedia Commons
+        run: python3 tools/sounds/discover.py tools/sounds/queries.txt | tee discover.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: discover
+          path: discover.txt

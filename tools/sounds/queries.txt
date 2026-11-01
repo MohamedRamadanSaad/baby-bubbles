@@ -1,0 +1,47 @@
+# key | Commons search terms
+cat | cat meow
+dog | dog barking
+cow | cow moo
+sheep | sheep bleat
+duck | duck quack
+chicken | hen clucking
+horse | horse neigh
+lion | lion roar
+elephant | elephant trumpet
+frog | frog croaking
+camel | camel vocalization
+owl | owl hoot
+sparrow | house sparrow song
+parrot | parrot call
+pigeon | pigeon cooing
+eagle | eagle call
+falcon | falcon call
+peacock | peacock call
+crow | crow caw
+hoopoe | hoopoe call
+penguin | penguin call
+flamingo | flamingo call
+rooster | rooster crowing
+car | car horn
+police | police siren
+ambulance | ambulance siren
+firetruck | fire truck siren
+airplane | airplane flyover
+helicopter | helicopter
+train | train horn
+steamtrain | steam locomotive whistle
+ship | ship horn
+motorcycle | motorcycle engine
+bicycle | bicycle bell
+bus | bus horn
+dolphin | dolphin clicks
+whale | humpback whale song
+bubbles | underwater bubbles
+praise1 | سبحان الله
+praise2 | الحمد لله
+praise3 | الله أكبر
+praise1b | Subhan Allah
+praise2b | Alhamdulillah
+praise3b | Allahu Akbar
+praiseLL | LL-Q13955 (ara) الله
+camelLL | LL-Q13955 (ara) جمل
