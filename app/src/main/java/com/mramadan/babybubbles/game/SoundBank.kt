@@ -54,8 +54,14 @@ class Speaker(context: Context) : TextToSpeech.OnInitListener {
         if (!ready) return
         val result = tts.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) return
+        // English is slowed right down so each sound of the word is clear for small children.
+        val english = locale.language == "en"
+        tts.setSpeechRate(if (english) 0.62f else 0.85f)
+        tts.setPitch(if (english) 1.15f else 1.1f)
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "speak")
     }
+
+    val isSpeaking: Boolean get() = ready && tts.isSpeaking
 
     /** Speaks only when nothing is being said, so fast taps don't chop phrases. */
     fun sayIfIdle(text: String, locale: Locale): Boolean {

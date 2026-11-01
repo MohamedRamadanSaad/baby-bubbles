@@ -108,7 +108,7 @@ private val Violet = BubbleColors[5]
 private val Teal = BubbleColors[6]
 
 /** Draws a 24-unit icon path scaled to the canvas, as stroke or fill. */
-private fun DrawScope.iconPath(data: String, color: Color, strokeWidth: Float? = 2f, viewport: Float = 24f) {
+internal fun DrawScope.iconPath(data: String, color: Color, strokeWidth: Float? = 2f, viewport: Float = 24f) {
     val path: Path = PathParser().parsePathString(data).toPath()
     val k = size.width / viewport
     scale(k, k, pivot = Offset.Zero) {
@@ -130,12 +130,7 @@ private class ModeOption(val mode: GameMode, val label: String, val art: DrawSco
 fun HomeScreen(
     mode: GameMode,
     onModeChange: (GameMode) -> Unit,
-    speed: SpeedLevel,
-    onSpeedChange: (SpeedLevel) -> Unit,
-    speakLang: SpeakLang,
-    onSpeakLangChange: (SpeakLang) -> Unit,
-    vibrate: Boolean,
-    onVibrateChange: (Boolean) -> Unit,
+    onSettings: () -> Unit,
     onStart: () -> Unit,
 ) = Rtl {
     val cat = painterResource(R.drawable.animal_cat)
@@ -148,7 +143,6 @@ fun HomeScreen(
     val fish = painterResource(R.drawable.sea_clownfish)
     val flagSa = painterResource(R.drawable.flag_sa)
     val flagEg = painterResource(R.drawable.flag_eg)
-    var showCredits by remember { mutableStateOf(false) }
 
     val options = listOf(
         ModeOption(GameMode.COLORS, "الألوان") {
@@ -190,14 +184,27 @@ fun HomeScreen(
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Canvas(Modifier.size(96.dp, 70.dp)) {
-                drawColorBubble(Offset(26.dp.toPx(), 40.dp.toPx()), 22.dp.toPx(), Yellow, shadow = false)
-                drawColorBubble(Offset(70.dp.toPx(), 44.dp.toPx()), 20.dp.toPx(), Teal, shadow = false)
-                drawColorBubble(Offset(49.dp.toPx(), 25.dp.toPx()), 25.dp.toPx(), Violet, shadow = false)
+        Box(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Canvas(Modifier.size(96.dp, 70.dp)) {
+                    drawColorBubble(Offset(26.dp.toPx(), 40.dp.toPx()), 22.dp.toPx(), Yellow, shadow = false)
+                    drawColorBubble(Offset(70.dp.toPx(), 44.dp.toPx()), 20.dp.toPx(), Teal, shadow = false)
+                    drawColorBubble(Offset(49.dp.toPx(), 25.dp.toPx()), 25.dp.toPx(), Violet, shadow = false)
+                }
+                Text("فقاعات", fontSize = 44.sp, lineHeight = 50.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Purple)
+                Text("لعب آمن لأصغر الأيدي", fontSize = 16.sp, color = Palette.Muted)
             }
-            Text("فقاعات", fontSize = 44.sp, lineHeight = 50.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Purple)
-            Text("لعب آمن لأصغر الأيدي", fontSize = 16.sp, color = Palette.Muted)
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .selectable(selected = false, role = Role.Button, onClick = onSettings),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(Modifier.size(26.dp)) { gearIcon(Palette.Purple) }
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -207,43 +214,6 @@ fun HomeScreen(
                     row.forEach { o -> ModeCard(o.label, mode == o.mode, { onModeChange(o.mode) }, o.art) }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
-            }
-        }
-
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-        ) {
-            SettingRow("سرعة الفقاعات") {
-                SegmentGroup {
-                    Segment("بطيئة", speed == SpeedLevel.SLOW) { onSpeedChange(SpeedLevel.SLOW) }
-                    Segment("متوسطة", speed == SpeedLevel.NORMAL) { onSpeedChange(SpeedLevel.NORMAL) }
-                    Segment("سريعة", speed == SpeedLevel.FAST) { onSpeedChange(SpeedLevel.FAST) }
-                }
-            }
-            HorizontalDivider(color = Palette.Divider)
-            SettingRow("نطق الأسماء") {
-                SegmentGroup {
-                    Segment("عربي", speakLang == SpeakLang.AR) { onSpeakLangChange(SpeakLang.AR) }
-                    Segment("English", speakLang == SpeakLang.EN) { onSpeakLangChange(SpeakLang.EN) }
-                }
-            }
-            HorizontalDivider(color = Palette.Divider)
-            SettingRow("اهتزاز خفيف عند الفرقعة") {
-                Switch(
-                    checked = vibrate,
-                    onCheckedChange = onVibrateChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Palette.Purple,
-                        uncheckedThumbColor = Palette.Muted,
-                        uncheckedTrackColor = Palette.Track,
-                        uncheckedBorderColor = Palette.CardBorder,
-                    ),
-                )
             }
         }
 
@@ -290,21 +260,29 @@ fun HomeScreen(
             )
         }
 
-        TextButton(onClick = { showCredits = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("حقوق الأصوات والصور", fontSize = 14.sp, color = Palette.Muted)
-        }
     }
-
-    if (showCredits) CreditsDialog { showCredits = false }
 }
 
-private fun DrawScope.inBubble(painter: Painter, center: Offset, r: Float) {
+/** A simple cog: ring plus eight teeth. */
+internal fun DrawScope.gearIcon(color: Color) {
+    val c = center
+    val r = size.minDimension / 2f
+    for (i in 0 until 8) {
+        val a = Math.toRadians(i * 45.0)
+        val dir = Offset(kotlin.math.cos(a).toFloat(), kotlin.math.sin(a).toFloat())
+        drawLine(color, c + dir * (r * 0.55f), c + dir * (r * 0.95f), strokeWidth = r * 0.32f, cap = StrokeCap.Round)
+    }
+    drawCircle(color, radius = r * 0.62f, center = c)
+    drawCircle(Color.White, radius = r * 0.26f, center = c)
+}
+
+internal fun DrawScope.inBubble(painter: Painter, center: Offset, r: Float) {
     drawClearBubble(center, r, strokeWidth = 2.dp.toPx())
     drawPainterCentered(painter, center, r * 1.5f)
     drawBubbleGloss(center, r)
 }
 
-private fun DrawScope.flagCard(painter: Painter, center: Offset, width: Float) {
+internal fun DrawScope.flagCard(painter: Painter, center: Offset, width: Float) {
     val h = width * 0.75f
     translate(center.x - width / 2f, center.y - h / 2f) {
         with(painter) { draw(Size(width, h)) }
@@ -313,7 +291,7 @@ private fun DrawScope.flagCard(painter: Painter, center: Offset, width: Float) {
 }
 
 @Composable
-private fun SettingRow(label: String, control: @Composable () -> Unit) {
+internal fun SettingRow(label: String, control: @Composable () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -325,7 +303,7 @@ private fun SettingRow(label: String, control: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SegmentGroup(content: @Composable RowScope.() -> Unit) {
+internal fun SegmentGroup(content: @Composable RowScope.() -> Unit) {
     Row(
         Modifier
             .clip(CircleShape)
@@ -383,7 +361,7 @@ private fun RowScope.ModeCard(
 }
 
 @Composable
-private fun Segment(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun Segment(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .defaultMinSize(minWidth = 52.dp)
@@ -404,7 +382,7 @@ private fun Segment(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun CreditsDialog(onClose: () -> Unit) {
+internal fun CreditsDialog(onClose: () -> Unit) {
     val context = LocalContext.current
     val lines = remember {
         val sounds = runCatching {
@@ -499,11 +477,12 @@ fun CallOverlay(onParent: () -> Unit) = Rtl {
 @Composable
 fun ParentGate(onSuccess: () -> Unit, onDismiss: () -> Unit) = Rtl {
     val question = remember {
-        val a = Random.nextInt(2, 8)
-        val b = Random.nextInt(2, 8)
+        // The sum is always below ten, and so are all the choices.
+        val a = Random.nextInt(1, 8)
+        val b = Random.nextInt(1, 10 - a)
         val answer = a + b
         val options = mutableSetOf(answer)
-        while (options.size < 4) options += Random.nextInt(4, 16)
+        while (options.size < 4) options += Random.nextInt(2, 10)
         Triple(a, b, options.shuffled() to answer)
     }
     val (a, b, rest) = question

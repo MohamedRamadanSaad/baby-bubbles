@@ -62,7 +62,7 @@ object Catalog {
         Character(R.drawable.bird_falcon, R.raw.snd_falcon, "صَقْر", "Falcon"),
         Character(R.drawable.bird_peacock, R.raw.snd_peacock, "طَاوُوس", "Peacock"),
         Character(R.drawable.bird_crow, R.raw.snd_crow, "غُرَاب", "Crow"),
-        Character(R.drawable.bird_hoopoe, R.raw.snd_hoopoe, "هُدْهُد", "Hoopoe"),
+        Character(R.drawable.bird_hoopoe, R.raw.snd_hoopoe, "هُدْهُد", "Hoopoe bird"),
         Character(R.drawable.bird_penguin, R.raw.snd_penguin, "بِطْرِيق", "Penguin"),
         Character(R.drawable.bird_flamingo, R.raw.snd_flamingo, "فْلَامِنْجُو", "Flamingo"),
     )
@@ -89,7 +89,7 @@ object Catalog {
         Character(R.drawable.fruit_strawberry, 0, "فَرَاوْلَة", "Strawberry"),
         Character(R.drawable.fruit_watermelon, 0, "بِطِّيخ", "Watermelon"),
         Character(R.drawable.fruit_pear, 0, "كُمَّثْرَى", "Pear"),
-        Character(R.drawable.fruit_cherry, 0, "كَرَز", "Cherries"),
+        Character(R.drawable.fruit_cherry, 0, "كَرَز", "Cherry"),
         Character(R.drawable.fruit_pineapple, 0, "أَنَانَاس", "Pineapple"),
         Character(R.drawable.fruit_mango, 0, "مَانْجُو", "Mango"),
         Character(R.drawable.fruit_lemon, 0, "لَيْمُون", "Lemon"),
@@ -97,14 +97,14 @@ object Catalog {
     )
 
     val sea = listOf(
-        Character(R.drawable.sea_clownfish, 0, "سَمَكَةُ المُهَرِّج", "Clownfish"),
-        Character(R.drawable.sea_bluetang, 0, "سَمَكَةٌ زَرْقَاء", "Blue tang"),
-        Character(R.drawable.sea_puffer, 0, "سَمَكَةٌ مُنْتَفِخَة", "Pufferfish"),
+        Character(R.drawable.sea_clownfish, 0, "سَمَكَةُ المُهَرِّج", "Clown fish"),
+        Character(R.drawable.sea_bluetang, 0, "سَمَكَةٌ زَرْقَاء", "Blue fish"),
+        Character(R.drawable.sea_puffer, 0, "سَمَكَةٌ مُنْتَفِخَة", "Puffer fish"),
         Character(R.drawable.sea_shark, 0, "قِرْش", "Shark"),
         Character(R.drawable.sea_whale, R.raw.snd_whale, "حُوت", "Whale"),
         Character(R.drawable.sea_dolphin, R.raw.snd_dolphin, "دُلْفِين", "Dolphin"),
         Character(R.drawable.sea_seahorse, 0, "حِصَانُ البَحْر", "Seahorse"),
-        Character(R.drawable.sea_starfish, 0, "نَجْمَةُ البَحْر", "Starfish"),
+        Character(R.drawable.sea_starfish, 0, "نَجْمَةُ البَحْر", "Star fish"),
         Character(R.drawable.sea_crab, 0, "سَلْطَعُون", "Crab"),
         Character(R.drawable.sea_octopus, 0, "أُخْطُبُوط", "Octopus"),
         Character(R.drawable.sea_jellyfish, 0, "قِنْدِيلُ البَحْر", "Jellyfish"),
@@ -112,9 +112,9 @@ object Catalog {
     )
 
     val flags = listOf(
-        Character(R.drawable.flag_sa, 0, "السُّعُودِيَّة", "Saudi Arabia"),
+        Character(R.drawable.flag_sa, 0, "السُّعُودِيَّة", "Saudi"),
         Character(R.drawable.flag_eg, 0, "مِصْر", "Egypt"),
-        Character(R.drawable.flag_ae, 0, "الإِمَارَات", "United Arab Emirates"),
+        Character(R.drawable.flag_ae, 0, "الإِمَارَات", "Emirates"),
         Character(R.drawable.flag_kw, 0, "الكُوَيْت", "Kuwait"),
         Character(R.drawable.flag_qa, 0, "قَطَر", "Qatar"),
         Character(R.drawable.flag_bh, 0, "البَحْرَيْن", "Bahrain"),
