@@ -1,12 +1,11 @@
 # key | Commons search terms
-camel | camel grunting
-camel2 | Camelus bactrianus
-camel3 | camel growl
-camel4 | camels sound
-airplane | aircraft flyover
-airplane2 | airplane landing
-airplane3 | jet engine
-dolphin | dolphin whistle
-dolphin2 | bottlenose dolphin
-penguin | Spheniscus
-penguin2 | penguin colony
+sabah | أذكار الصباح
+masaa | أذكار المساء
+adhkar | adhkar
+azkar | azkar morning
+dhikr | dhikr
+tasbih | تسبيح
+alafasy | Alafasy
+afasy | العفاسي
+kursi | آية الكرسي
+subhan | سبحان الله وبحمده
