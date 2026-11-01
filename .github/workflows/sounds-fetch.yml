@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Resume from earlier downloads
+        run: |
+          git clone -q --depth 1 -b sounds-raw "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" /tmp/raw || mkdir -p /tmp/raw
+          rm -rf /tmp/raw/.git
       - name: Download from Wikimedia Commons
         run: python3 tools/sounds/fetch.py tools/sounds/fetch.txt /tmp/raw
       - name: Publish raw files to the sounds-raw branch

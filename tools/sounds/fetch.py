@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -15,9 +16,17 @@ UA = "BabyBubblesSoundFetcher/1.0 (https://github.com/MohamedRamadanSaad/baby-bu
 
 
 def get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return r.read()
+    for attempt in range(6):
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or attempt == 5:
+                raise
+            wait = int(e.headers.get("Retry-After") or 0) or 20 * (attempt + 1)
+            print(f"  429, waiting {wait}s")
+            time.sleep(wait)
 
 
 def strip(html):
@@ -42,9 +51,13 @@ for line in open(sys.argv[1], encoding="utf-8"):
 
 out = sys.argv[2]
 os.makedirs(out, exist_ok=True)
-credits = []
+credits_path = os.path.join(out, "credits.json")
+credits = json.load(open(credits_path, encoding="utf-8")) if os.path.exists(credits_path) else []
+have = {c["key"] for c in credits}
 failed = []
 for key, title in entries:
+    if key in have:
+        continue
     params = {
         "action": "query", "titles": title, "prop": "imageinfo|videoinfo",
         "iiprop": "url|extmetadata", "viprop": "url|extmetadata",
@@ -73,7 +86,7 @@ for key, title in entries:
     except Exception as e:  # noqa: BLE001
         failed.append(key)
         print(f"FAIL\t{key}\t{title}\t{e}")
-    time.sleep(0.4)
+    time.sleep(3)
 
 with open(os.path.join(out, "credits.json"), "w", encoding="utf-8") as f:
     json.dump(credits, f, ensure_ascii=False, indent=1)
