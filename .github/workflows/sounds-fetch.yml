@@ -1,0 +1,24 @@
+name: Sounds - fetch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download from Wikimedia Commons
+        run: python3 tools/sounds/fetch.py tools/sounds/fetch.txt /tmp/raw
+      - name: Publish raw files to the sounds-raw branch
+        run: |
+          cd /tmp/raw
+          git init -q -b sounds-raw
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Raw Commons sound downloads"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" sounds-raw

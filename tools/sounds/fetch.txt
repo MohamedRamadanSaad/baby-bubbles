@@ -1,0 +1,49 @@
+# key | Commons file title (all freely licensed: PD, CC0, CC BY, CC BY-SA)
+cat | Meow of a Siamese cat - freemaster2.wav
+cat_b | Maullido de gata hembra joven.ogg
+dog | Barking of a dog.ogg
+cow | Single Cow Moo.ogg
+cow_b | Mudchute cow 1.ogg
+sheep | Sheep bleating.ogg
+sheep_b | Mudchute sheep 1.ogg
+duck | Anas platyrhynchos - Mallard - XC62258.ogg
+chicken | Hen announcing shes lain an egg.ogg
+horse | Wiehern.ogg
+lion | Lion raring-sound1TamilNadu178.ogg
+lion_b | Lion Mad.ogg
+elephant | Elephant voice - trumpeting.ogg
+frog | Single Frog Croak.oga
+camel | Cri du chameau.ogg
+owl | Strix aluco male.oga
+sparrow | House Sparrows chirping.ogg
+parrot | Scarlet macaw 01.wav
+parrot_b | Kampfgeschrei Graupapagei.ogg
+pigeon | Dove cooing.ogg
+eagle | Black eagle call recorded in March 2013 at Mudumalai National Park, Tamil Nadu.wav
+falcon | Peregrine falcon call recorded in February 2010 at Yana, Karnataka.wav
+peacock | Pavo cristatus (call).ogg
+crow | Corvus corone - Carrion Crow XC507917.mp3
+hoopoe | Upupa epops.ogg
+penguin | Little Penguin (Eudyptula minor).ogg
+flamingo | Phoenicopterus roseus - Greater Flamingo XC432217.mp3
+car | Car Horn.wav
+police | Siren.ogg
+ambulance | AmbulanceSound1.wav
+firetruck | WWS Fireenginesiren.ogg
+airplane | Jet airliner overhead.ogg
+helicopter | Chinook helicopter flying over Greenwich in London.ogg
+helicopter_b | Helicopter-helicopter-parakofer-parakofer.ogg
+train | WWS SteamWhistle.ogg
+train_b | Parovoz sound.ogg
+ship | Cruise ship Albatros ship horn.ogg
+motorcycle | Yamaha RX-100 accelerates to top speed.ogg
+bicycle | Bicycle-bell-1.wav
+bus | WWS CityBusMANSG220horn.ogg
+whale | Humpbackwhale2.ogg
+dolphin | 161691 felixblume dolphin-screaming-underwater-in-caribbean-sea-mexico.wav
+bubbles | Toberbreedia water bubbling.opus
+bubbles_b | Water bubbles chortling.ogg
+bubble1 | Bubble 01 nevit.ogg
+crunch | Crunching munching grinding.ogg
+allahuakbar | Allahuakbar.opus
+alhamdulillah | Ar-الحمد لله.ogg
