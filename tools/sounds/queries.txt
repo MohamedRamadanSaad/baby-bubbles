@@ -1,28 +1,12 @@
 # key | Commons search terms
-lion | Panthera leo roar
-lion2 | lion roaring
-camel | Camelus dromedarius
-camel2 | dromedary camel sound
-duck | Anas platyrhynchos quack
-duck2 | mallard duck quacking
-sparrow | sparrow chirping
-parrot | Ara macao macaw
-parrot2 | Psittacus erithacus african grey
-penguin | Spheniscus demersus african penguin
-penguin2 | penguin braying
-airplane | jet aircraft takeoff
-airplane2 | propeller airplane flying
-dolphin | Tursiops truncatus whistle
-dolphin2 | dolphin sound
-bubbles | water bubbles
-bubbles2 | bubble pop sound
-praise1 | سبحان الله صوت
-praise1b | Subhanallah
-praise1c | LL-Q13955 (ara) سبحان
-praise1d | Ar-سبحان الله
-praise2 | LL-Q13955 (ara) الحمد لله
-praise3 | LL-Q13955 (ara) الله أكبر
-bite | apple bite crunch
-bite2 | eating crunch
-splash | water splash
-chirp | bird chirp short
+camel | camel grunting
+camel2 | Camelus bactrianus
+camel3 | camel growl
+camel4 | camels sound
+airplane | aircraft flyover
+airplane2 | airplane landing
+airplane3 | jet engine
+dolphin | dolphin whistle
+dolphin2 | bottlenose dolphin
+penguin | Spheniscus
+penguin2 | penguin colony
