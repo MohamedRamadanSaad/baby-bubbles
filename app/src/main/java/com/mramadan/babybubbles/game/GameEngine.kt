@@ -81,7 +81,7 @@ class Walker(val kind: WalkerKind, var x: Float, var dir: Float, val speed: Floa
     var hopT = -1f
 }
 
-class Cloud(var x: Float, val y: Float, val scale: Float, val speed: Float)
+class Cloud(var x: Float, val y: Float, val scale: Float, val speed: Float, val seed: Int = 0)
 
 /**
  * Pure game state: spawning, movement, hit testing and pop effects.
@@ -195,7 +195,7 @@ class GameEngine(private val events: GameEvents) {
 
         for (c in clouds) {
             c.x += c.speed * dt
-            if (c.x > width + 20f * density) c.x = -120f * density * c.scale
+            if (c.x > width + 10f * density) c.x = -200f * density * c.scale
         }
     }
 
@@ -331,9 +331,9 @@ class GameEngine(private val events: GameEvents) {
             GameMode.COLORS -> Unit
         }
         if (mode != GameMode.SEA) {
-            clouds += Cloud(width * 0.58f, 52f * d, 1f, 9f * d)
-            clouds += Cloud(width * 0.3f, 118f * d, 0.67f, 6f * d)
-            clouds += Cloud(-60f * d, 190f * d, 0.8f, 7f * d)
+            clouds += Cloud(width * 0.55f, 46f * d, 1f, 9f * d, seed = 1)
+            clouds += Cloud(width * 0.12f, 120f * d, 0.7f, 6f * d, seed = 2)
+            clouds += Cloud(-90f * d, 196f * d, 0.85f, 7f * d, seed = 3)
         }
     }
 

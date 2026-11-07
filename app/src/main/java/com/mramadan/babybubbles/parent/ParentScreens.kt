@@ -131,6 +131,7 @@ fun HomeScreen(
     mode: GameMode,
     onModeChange: (GameMode) -> Unit,
     onSettings: () -> Unit,
+    onHunt: () -> Unit,
     onStart: () -> Unit,
 ) = Rtl {
     val cat = painterResource(R.drawable.animal_cat)
@@ -219,6 +220,8 @@ fun HomeScreen(
                 }
             }
         }
+
+        HuntCard(onHunt)
 
         Button(
             onClick = onStart,
@@ -608,5 +611,40 @@ fun AppLogo(modifier: Modifier = Modifier) {
             painterResource(R.drawable.ic_launcher_foreground), contentDescription = "فقاعات",
             contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize().scale(1.35f),
         )
+    }
+}
+
+
+/** Entry to the two-player bird hunt, below the bubble modes. */
+@Composable
+private fun HuntCard(onClick: () -> Unit) {
+    val bird = painterResource(R.drawable.bird_parrot)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFFFE9C7), Color(0xFFFFD1D1))))
+            .border(2.dp, Color(0xFFFFB38A), RoundedCornerShape(22.dp))
+            .selectable(selected = false, role = Role.Button, onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Canvas(Modifier.size(76.dp)) {
+            drawPainterCentered(bird, Offset(size.width * 0.52f, size.height * 0.5f), size.width * 0.85f)
+            val c = Offset(size.width * 0.58f, size.height * 0.42f)
+            val r = size.width * 0.2f
+            drawCircle(Color(0xFFFF3B3B), radius = r, center = c, style = Stroke(3.dp.toPx()))
+            drawCircle(Color(0xFFFF3B3B), radius = 3.dp.toPx(), center = c)
+            for (k in 0 until 4) {
+                val a = k * Math.PI.toFloat() / 2f
+                val dir = Offset(kotlin.math.cos(a), kotlin.math.sin(a))
+                drawLine(Color(0xFFFF3B3B), c + dir * (r * 0.5f), c + dir * (r * 1.45f), strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round)
+            }
+        }
+        Column(Modifier.weight(1f)) {
+            Text("صيد الطيور", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Ink)
+            Text("لعبة لاعبَين: من يجمع نقاطًا أكثر يفوز", fontSize = 14.sp, color = Palette.Muted)
+        }
     }
 }

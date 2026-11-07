@@ -230,3 +230,19 @@ private fun DrawScope.drawEffects(e: GameEngine) {
         drawSparkle(Offset(s.x, s.y), r, s.color, alpha = 1f - q)
     }
 }
+
+
+/** The scenery drawings, for screens other than the bubble game (the hunt). */
+@Composable
+fun rememberSceneArt(): SceneArt = SceneArt(
+    cloud = painterResource(R.drawable.scene_cloud),
+    hills = painterResource(R.drawable.scene_hills),
+    duck = painterResource(R.drawable.walker_duck),
+    snail = painterResource(R.drawable.walker_snail),
+    butterfly = painterResource(R.drawable.walker_butterfly),
+    car = painterResource(R.drawable.veh_car),
+    bird = painterResource(R.drawable.bird_sparrow),
+    fish = painterResource(R.drawable.sea_clownfish),
+    fish2 = painterResource(R.drawable.sea_bluetang),
+    jungleTree = painterResource(R.drawable.scene_jungle_tree),
+)

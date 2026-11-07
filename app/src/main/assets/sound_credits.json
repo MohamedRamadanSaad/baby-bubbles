@@ -352,6 +352,22 @@
   "artist": ""
  },
  {
+  "sound": "snd_applause",
+  "title": "File:Clapping hurray (cropped).oga",
+  "page": "https://commons.wikimedia.org/wiki/File:Clapping_hurray_(cropped).oga",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "artist": "Starlite"
+ },
+ {
+  "sound": "snd_fireworks",
+  "title": "File:Fireworks in distance 3.ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Fireworks_in_distance_3.ogg",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "artist": "ezwa"
+ },
+ {
   "sound": "snd_bubbles",
   "title": "File:Toberbreedia water bubbling.opus",
   "page": "https://commons.wikimedia.org/wiki/File:Toberbreedia_water_bubbling.opus",

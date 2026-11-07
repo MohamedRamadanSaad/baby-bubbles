@@ -23,7 +23,10 @@ class SoundBank(context: Context) {
     private val pop = pool.load(context, R.raw.pop, 1)
     private val ids: Map<Int, Int> = (
         Catalog.all.map { it.sound }.filter { it != 0 } +
-            listOf(R.raw.snd_crunch, R.raw.snd_blub, R.raw.snd_bubbles, R.raw.snd_sparrow, R.raw.snd_car)
+            listOf(
+                R.raw.snd_crunch, R.raw.snd_blub, R.raw.snd_bubbles, R.raw.snd_sparrow, R.raw.snd_car,
+                R.raw.snd_shot, R.raw.snd_applause, R.raw.snd_fireworks,
+            )
         ).distinct().associateWith { pool.load(context, it, 1) }
 
     fun playPop(rate: Float = 1f, volume: Float = 0.45f) {

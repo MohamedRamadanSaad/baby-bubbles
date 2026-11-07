@@ -57,6 +57,7 @@ sealed interface Screen {
     data object Settings : Screen
     data object RecordHome : Screen
     data class RecordItems(val mode: GameMode) : Screen
+    data object HuntSetup : Screen
 }
 
 class MainActivity : ComponentActivity(), GameEvents {
@@ -77,6 +78,9 @@ class MainActivity : ComponentActivity(), GameEvents {
     private lateinit var recorder: Recorder
     private lateinit var voicePlayer: VoicePlayer
     private lateinit var azkar: AzkarPlayer
+    private lateinit var settingsStore: Settings
+    private lateinit var huntEngine: com.mramadan.babybubbles.hunt.HuntEngine
+    private var huntMatch by mutableStateOf<com.mramadan.babybubbles.hunt.HuntMatch?>(null)
 
     private val handler = Handler(Looper.getMainLooper())
     private var pendingName: Runnable? = null
@@ -153,7 +157,9 @@ class MainActivity : ComponentActivity(), GameEvents {
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        prefs = LivePrefs(Settings(this))
+        settingsStore = Settings(this)
+        prefs = LivePrefs(settingsStore)
+        huntEngine = com.mramadan.babybubbles.hunt.HuntEngine(huntEvents)
         sounds = SoundBank(this)
         speaker = Speaker(this)
         engine = GameEngine(this)
@@ -167,7 +173,40 @@ class MainActivity : ComponentActivity(), GameEvents {
             BabyTheme {
                 if (playing) {
                     Box {
-                        GameScreen(engine, characters)
+                        val match = huntMatch
+                        if (match != null) {
+                            com.mramadan.babybubbles.hunt.HuntFlow(
+                                match = match,
+                                engine = huntEngine,
+                                art = com.mramadan.babybubbles.game.rememberSceneArt(),
+                                onFire = { huntEngine.fire() },
+                                onTurnDoneNext = {
+                                    match.phase = if (match.player == 0) {
+                                        com.mramadan.babybubbles.hunt.HuntPhase.VS
+                                    } else {
+                                        com.mramadan.babybubbles.hunt.HuntPhase.RESULT
+                                    }
+                                },
+                                onVsDone = {
+                                    match.player = 1
+                                    huntEngine.start(match.seconds)
+                                    match.phase = com.mramadan.babybubbles.hunt.HuntPhase.PLAYING
+                                },
+                                onAgain = {
+                                    match.scores[0] = 0
+                                    match.scores[1] = 0
+                                    match.player = 0
+                                    huntEngine.start(match.seconds)
+                                    match.phase = com.mramadan.babybubbles.hunt.HuntPhase.PLAYING
+                                },
+                                onCelebrate = {
+                                    sounds.play(R.raw.snd_applause, 0.9f)
+                                    handler.postDelayed({ if (huntMatch != null) sounds.play(R.raw.snd_fireworks, 0.7f) }, 600)
+                                },
+                            )
+                        } else {
+                            GameScreen(engine, characters)
+                        }
                         if (ringing && !showGate) CallOverlay(onParent = { showGate = true })
                         if (showGate) {
                             ParentGate(
@@ -182,7 +221,14 @@ class MainActivity : ComponentActivity(), GameEvents {
                             mode = prefs.mode,
                             onModeChange = { prefs.mode = it },
                             onSettings = { screen = Screen.Settings },
+                            onHunt = { screen = Screen.HuntSetup },
                             onStart = { startPlay() },
+                        )
+                        Screen.HuntSetup -> com.mramadan.babybubbles.hunt.HuntSetupScreen(
+                            initialNames = settingsStore.huntName1 to settingsStore.huntName2,
+                            initialSeconds = settingsStore.huntSeconds,
+                            onStart = { n1, n2, secs -> startHunt(n1, n2, secs) },
+                            onBack = { screen = Screen.Home },
                         )
                         Screen.Settings -> SettingsScreen(
                             prefs = prefs,
@@ -391,10 +437,43 @@ class MainActivity : ComponentActivity(), GameEvents {
 
     // ---- Play session and lock ---------------------------------------------
 
+    private val huntEvents = object : com.mramadan.babybubbles.hunt.HuntEvents {
+        override fun onShot() {
+            sounds.play(R.raw.snd_shot, 0.6f)
+            haptic()
+        }
+
+        override fun onHit(type: Int) {
+            sounds.play(com.mramadan.babybubbles.hunt.HuntBirds[type].sound, 0.8f)
+        }
+
+        override fun onTimeUp() {
+            val match = huntMatch ?: return
+            match.scores[match.player] = huntEngine.score
+            match.phase = com.mramadan.babybubbles.hunt.HuntPhase.TURN_DONE
+            sounds.playPop(rate = 0.8f, volume = 0.6f)
+        }
+    }
+
+    private fun startHunt(name1: String, name2: String, seconds: Int) {
+        settingsStore.huntName1 = name1
+        settingsStore.huntName2 = name2
+        settingsStore.huntSeconds = seconds
+        huntMatch = com.mramadan.babybubbles.hunt.HuntMatch(listOf(name1, name2), seconds)
+        huntEngine.start(seconds)
+        beginLockedSession()
+    }
+
     private fun startPlay() {
         playMode = prefs.mode
         characters = Catalog.forMode(playMode)
         engine.start(playMode, characters.size, prefs.speed, prefs.maxBubbles)
+        huntMatch = null
+        beginLockedSession()
+    }
+
+    /** Shared by the bubble game and the hunt: pin the screen, hide bars, watch for calls, start azkar. */
+    private fun beginLockedSession() {
         praiseIndex = 0
         ringing = false
         azkarPausedForCall = false
@@ -416,6 +495,7 @@ class MainActivity : ComponentActivity(), GameEvents {
 
     private fun exitPlay() {
         showGate = false
+        huntMatch = null
         playing = false
         ringing = false
         screen = Screen.Home

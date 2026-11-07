@@ -81,6 +81,18 @@ class Settings(context: Context) {
         get() = enumPref("azkarWhich", AzkarWhich.AUTO)
         set(value) = put("azkarWhich", value.name)
 
+    var huntName1: String
+        get() = prefs.getString("huntName1", null) ?: "اللاعب الأول"
+        set(value) = put("huntName1", value)
+
+    var huntName2: String
+        get() = prefs.getString("huntName2", null) ?: "اللاعب الثاني"
+        set(value) = put("huntName2", value)
+
+    var huntSeconds: Int
+        get() = prefs.getInt("huntSeconds", 120)
+        set(value) = prefs.edit().putInt("huntSeconds", value).apply()
+
     /** A picked file for a slot (an earlier single file counts as the morning one). */
     fun slotUri(slot: AzkarSlot): String? =
         prefs.getString("${slot.key}Uri", null) ?: if (slot == AzkarSlot.MORNING) prefs.getString("azkarUri", null) else null

@@ -42,9 +42,10 @@ private class SkyKey(val t: Float, val top: Color, val bottom: Color)
 private val SkyKeys = listOf(
     SkyKey(0.00f, Color(0xFF9AD5FF), Color(0xFFFFE8C8)), // dawn
     SkyKey(0.08f, Color(0xFF7CC8FF), Color(0xFFE4F5FF)), // morning
-    SkyKey(0.28f, Color(0xFF7CC8FF), Color(0xFFE4F5FF)),
-    SkyKey(0.32f, Color(0xFF8A99A8), Color(0xFFC9D3DC)), // rain
-    SkyKey(0.40f, Color(0xFF8A99A8), Color(0xFFC9D3DC)),
+    SkyKey(0.21f, Color(0xFF7CC8FF), Color(0xFFE4F5FF)),
+    SkyKey(0.27f, Color(0xFF8FA4B8), Color(0xFFD3DCE4)), // clouds gathering
+    SkyKey(0.31f, Color(0xFF6F7C8A), Color(0xFFAEB8C2)), // heavy rain clouds
+    SkyKey(0.40f, Color(0xFF6F7C8A), Color(0xFFAEB8C2)),
     SkyKey(0.44f, Color(0xFF8CCBF5), Color(0xFFFFE3B3)), // clearing, warm
     SkyKey(0.51f, Color(0xFF5B5BA8), Color(0xFFFF9E6B)), // sunset
     SkyKey(0.57f, Color(0xFF2A2D63), Color(0xFF8E5B8F)), // dusk
@@ -62,6 +63,9 @@ fun dayPhase(time: Float): Float {
 }
 
 fun rainAmount(p: Float) = ramp(p, 0.30f, 0.32f) * (1f - ramp(p, 0.40f, 0.43f))
+
+/** Rain clouds: they gather and darken before the rain, and thin out after it. */
+fun stormAmount(p: Float) = ramp(p, 0.19f, 0.29f) * (1f - ramp(p, 0.41f, 0.48f))
 fun nightAmount(p: Float) = ramp(p, 0.55f, 0.63f) * (1f - ramp(p, 0.93f, 1f))
 private fun sunsetAmount(p: Float) = ramp(p, 0.44f, 0.51f) * (1f - ramp(p, 0.51f, 0.57f))
 
@@ -96,10 +100,30 @@ private val MoonColor = Color(0xFFF4F1DE)
 
 /** Sky, sun or moon, stars, clouds, hills and (for vehicles) a road. */
 fun DrawScope.drawLandScene(e: GameEngine, art: SceneArt) {
-    val d = e.density
-    val p = dayPhase(e.time)
+    val groundTint = drawWorld(e.time, e.density, e.hillsHeight, e.clouds, e.mode, art)
+    if (e.mode == GameMode.VEHICLES) drawRoad(e, groundTint)
+    drawWalkers(e, art)
+    val rain = rainAmount(dayPhase(e.time))
+    if (rain > 0.01f) drawRain(e.time, e.density, rain)
+}
+
+/**
+ * Sky, sun or moon, stars, clouds and hills. [phase] fixes the time of day
+ * (the hunt game keeps a bright morning). Returns the ground tint.
+ */
+fun DrawScope.drawWorld(
+    time: Float,
+    d: Float,
+    hillsHeight: Float,
+    clouds: List<Cloud>,
+    mode: GameMode?,
+    art: SceneArt,
+    phase: Float = dayPhase(time),
+): Color {
+    val p = phase
     val night = nightAmount(p)
     val rain = rainAmount(p)
+    val storm = stormAmount(p)
     val (top, bottom) = skyColors(p)
     drawRect(Brush.verticalGradient(listOf(top, bottom)))
 
@@ -108,13 +132,13 @@ fun DrawScope.drawLandScene(e: GameEngine, art: SceneArt) {
         for (i in 0 until 46) {
             val x = hash(i, 1) * size.width
             val y = hash(i, 2) * size.height * 0.6f
-            val tw = 0.55f + 0.45f * sin(e.time * (1.5f + hash(i, 3) * 2f) + i)
+            val tw = 0.55f + 0.45f * sin(time * (1.5f + hash(i, 3) * 2f) + i)
             drawCircle(Color.White, radius = (1.2f + hash(i, 4) * 1.8f) * d, center = Offset(x, y), alpha = night * tw)
         }
-        if (night > 0.8f) drawShootingStar(e.time, d, night)
+        if (night > 0.8f) drawShootingStar(time, d, night)
     }
 
-    val horizon = size.height - e.hillsHeight * 0.55f
+    val horizon = size.height - hillsHeight * 0.55f
     val peak = 90f * d
 
     // Moon (second half of the cycle).
@@ -134,35 +158,112 @@ fun DrawScope.drawLandScene(e: GameEngine, art: SceneArt) {
         val u = p / 0.57f
         val c = Offset(size.width * (0.08f + 0.84f * u), horizon - sin(PI.toFloat() * u) * (horizon - peak))
         val sunColor = lerp(SunYellow, SunOrange, sunsetAmount(p))
-        val dim = 1f - rain * 0.65f
-        val pulse = 1f + 0.04f * sin(e.time * 1.2f)
+        val dim = 1f - storm * 0.75f
+        val pulse = 1f + 0.04f * sin(time * 1.2f)
         drawCircle(sunColor, radius = 72f * d * pulse, center = c, alpha = 0.14f * dim)
         drawCircle(sunColor, radius = 56f * d * pulse, center = c, alpha = 0.28f * dim)
         drawCircle(sunColor, radius = 42f * d, center = c, alpha = dim)
     }
 
-    val cloudTint = lerp(lerp(Color.White, Color(0xFF8E9AAB), rain), Color(0xFF59648C), night * 0.8f)
-    for (c in e.clouds) {
-        val s = c.scale * (1f + rain * 0.35f)
-        translate(c.x, c.y) {
-            with(art.cloud) {
-                draw(Size(120f * d * s, 63f * d * s), alpha = 0.95f, colorFilter = modulate(cloudTint))
-            }
-        }
-    }
+    drawClouds(time, d, clouds, storm, night, sunsetAmount(p))
 
-    val hh = e.hillsHeight
-    if (e.mode == GameMode.JUNGLE) drawJungleTrees(e, art, cloudTint)
-    val groundTint = lerp(lerp(Color.White, Color(0xFFC3CFC3), rain * 0.5f), Color(0xFF4A5A8C), night * 0.75f)
+    val hh = hillsHeight
+    if (mode == GameMode.JUNGLE) drawJungleTrees(time, d, hh, art)
+    val groundTint = lerp(lerp(Color.White, Color(0xFFB9C6B9), storm * 0.6f), Color(0xFF4A5A8C), night * 0.75f)
     translate(0f, size.height - hh) {
         with(art.hills) { draw(Size(size.width, hh), colorFilter = modulate(groundTint)) }
     }
+    return groundTint
+}
 
-    if (e.mode == GameMode.VEHICLES) drawRoad(e, groundTint)
+/**
+ * One cumulus cloud: a dome of small soft-edged puffs on a flat base, shaded as a
+ * whole (light on top, grey underneath), with a little shadow and glow per puff.
+ * Drawn on its own layer so a fading cloud doesn't show its overlaps.
+ * [flat] makes the long, low rain clouds.
+ */
+private fun DrawScope.drawCloud(center: Offset, w: Float, seed: Int, light: Color, shade: Color, alpha: Float, flat: Boolean = false) {
+    if (alpha <= 0.01f) return
+    val base = center.y
+    val bounds = androidx.compose.ui.geometry.Rect(center.x - w * 0.7f, base - w * 0.6f, center.x + w * 0.7f, base + w * 0.12f)
+    val layer = androidx.compose.ui.graphics.Paint().apply { this.alpha = alpha }
+    drawContext.canvas.saveLayer(bounds, layer)
 
-    drawWalkers(e, art)
+    val puffs = ArrayList<Triple<Float, Float, Float>>()
+    val k = 11 + (hash(seed, 1) * 4f).toInt()
+    for (i in 0 until k) {
+        val f = i / (k - 1f)
+        val x = -0.44f + 0.88f * f + (hash(seed, 70 + i) - 0.5f) * 0.05f
+        val profile = Math.pow((1f - (abs(x) / 0.46f).coerceAtMost(1f)).toDouble(), 0.7).toFloat()
+        val r = (0.07f + 0.11f * profile * (if (flat) 0.6f else 1f)) * w * (0.85f + 0.3f * hash(seed, 10 + i))
+        puffs += Triple(center.x + x * w, base - r * 0.8f + (hash(seed, 80 + i) - 0.5f) * 0.02f * w, r)
+    }
+    val m = if (flat) 2 else 3 + (hash(seed, 2) * 2f).toInt()
+    for (j in 0 until m) {
+        val x = -0.18f + 0.36f * (if (m == 1) 0.5f else j / (m - 1f)) + (hash(seed, 20 + j) - 0.5f) * 0.1f
+        val r = (0.12f + hash(seed, 40 + j) * 0.05f) * w * (if (flat) 0.7f else 1f)
+        puffs += Triple(center.x + x * w, base - (if (flat) 0.12f else 0.2f) * w - hash(seed, 30 + j) * 0.06f * w, r)
+    }
 
-    if (rain > 0.01f) drawRain(e.time, d, rain)
+    // Soft white silhouette.
+    for ((x, y, r) in puffs) {
+        drawCircle(
+            brush = Brush.radialGradient(0f to Color.White, 0.8f to Color.White, 1f to Color.White.copy(alpha = 0f), center = Offset(x, y), radius = r * 1.15f),
+            radius = r * 1.15f, center = Offset(x, y),
+        )
+    }
+    drawOval(Color.White, topLeft = Offset(center.x - w * 0.43f, base - w * 0.08f), size = Size(w * 0.86f, w * 0.1f))
+
+    // One shading over the whole cloud, then gentle depth per puff.
+    val top = base - w * 0.45f
+    val bottom = base + w * 0.02f
+    drawRect(
+        brush = Brush.verticalGradient(0f to light, 0.55f to light, 1f to shade, startY = top, endY = bottom),
+        topLeft = Offset(center.x - w, top - w), size = Size(w * 2f, w * 2.2f),
+        blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop,
+    )
+    for ((x, y, r) in puffs) {
+        val sc = Offset(x + r * 0.35f, y + r * 0.45f)
+        drawCircle(
+            brush = Brush.radialGradient(listOf(shade.copy(alpha = 0.28f), shade.copy(alpha = 0f)), center = sc, radius = r),
+            radius = r, center = sc, blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop,
+        )
+        val hc = Offset(x - r * 0.3f, y - r * 0.4f)
+        drawCircle(
+            brush = Brush.radialGradient(listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0f)), center = hc, radius = r * 0.8f),
+            radius = r * 0.8f, center = hc, blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop,
+        )
+    }
+    drawContext.canvas.restore()
+}
+
+/** Fair-weather clouds, plus a heavy rain front that rolls in from both sides and darkens. */
+private fun DrawScope.drawClouds(time: Float, d: Float, clouds: List<Cloud>, storm: Float, night: Float, sunset: Float) {
+    fun lit(day: Color, dusk: Color, dark: Color): Color =
+        lerp(lerp(day, dusk, sunset * 0.6f), dark, night * 0.8f)
+
+    // White and fluffy in fair weather, grey and heavy with water before rain.
+    val light = lit(lerp(Color.White, Color(0xFFA3ADB8), storm), Color(0xFFFFDCC8), Color(0xFF5E6A94))
+    val shade = lit(lerp(Color(0xFFD0DAE6), Color(0xFF5A6470), storm), Color(0xFFC9A6B8), Color(0xFF3A4366))
+
+    clouds.forEach { c ->
+        val w = 170f * d * c.scale * (1f + storm * 0.45f)
+        drawCloud(Offset(c.x + w / 2f, c.y + w * 0.4f), w, c.seed, light, shade, 0.97f)
+    }
+
+    if (storm > 0.01f) {
+        val e = storm * storm * (3f - 2f * storm)
+        val stormLight = lit(Color(0xFF8C97A3), Color(0xFFB79A9A), Color(0xFF4A5478))
+        val stormShade = lit(Color(0xFF47505B), Color(0xFF6E5A66), Color(0xFF2A3150))
+        for (i in 0 until 7) {
+            val target = size.width * (-0.05f + i * 0.18f)
+            val start = target + (if (i % 2 == 0) -1f else 1f) * size.width * 0.7f
+            val x = start + (target - start) * e + sin(time * 0.15f + i) * 10f * d
+            val y = (30f + hash(i, 51) * 120f) * d
+            val w = (210f + hash(i, 52) * 90f) * d * (0.7f + 0.5f * e)
+            drawCloud(Offset(x, y + w * 0.3f), w * 1.15f, 100 + i, stormLight, stormShade, e, flat = true)
+        }
+    }
 }
 
 private fun DrawScope.drawShootingStar(time: Float, d: Float, night: Float) {
@@ -324,14 +425,13 @@ fun DrawScope.drawSeaScene(e: GameEngine, art: SceneArt) {
 
 
 /** Big leafy trees standing behind the hills in the jungle scene, dimmed at night. */
-private fun DrawScope.drawJungleTrees(e: GameEngine, art: SceneArt, @Suppress("UNUSED_PARAMETER") cloudTint: Color) {
-    val d = e.density
-    val tint = modulate(sceneTint(e.time))
-    val base = size.height - e.hillsHeight * 0.45f
+private fun DrawScope.drawJungleTrees(time: Float, d: Float, hillsHeight: Float, art: SceneArt) {
+    val tint = modulate(sceneTint(time))
+    val base = size.height - hillsHeight * 0.45f
     for ((fx, scale) in listOf(-0.06f to 1.25f, 0.62f to 1.0f, 0.3f to 0.75f, 0.86f to 0.85f)) {
         val w = 150f * d * scale
         val h = w * 160f / 120f
-        val sway = sin(e.time * 0.7f + fx * 10f) * 1.5f
+        val sway = sin(time * 0.7f + fx * 10f) * 1.5f
         rotate(sway, pivot = Offset(size.width * fx + w / 2f, base)) {
             translate(size.width * fx, base - h) {
                 with(art.jungleTree) { draw(Size(w, h), colorFilter = tint) }
