@@ -47,3 +47,12 @@ bubble1 | Bubble 01 nevit.ogg
 crunch | Crunching munching grinding.ogg
 allahuakbar | Allahuakbar.opus
 alhamdulillah | Ar-الحمد لله.ogg
+tiger | 439280 schots angry-tiger.wav
+monkey | Pant-hoot call made by a male chimpanzee.ogg
+giraffe | Giraffe grunt.oga
+zebra | Grévys zebra (Sound Effects).ogg
+hippo | Hippopotamus sound effect.wav
+crocodile | Alligatorbellowedit.ogg
+bear | Yellowstone sound library - Grizzly Bears Roar - 001.mp3
+wolf | Wolf howls.ogg
+snake | Rattlesnake.ogg
