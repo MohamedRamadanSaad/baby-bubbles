@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
@@ -331,7 +332,7 @@ private fun DrawScope.drawJungleTrees(e: GameEngine, art: SceneArt, @Suppress("U
         val w = 150f * d * scale
         val h = w * 160f / 120f
         val sway = sin(e.time * 0.7f + fx * 10f) * 1.5f
-        androidx.compose.ui.graphics.drawscope.rotate(sway, pivot = Offset(size.width * fx + w / 2f, base)) {
+        rotate(sway, pivot = Offset(size.width * fx + w / 2f, base)) {
             translate(size.width * fx, base - h) {
                 with(art.jungleTree) { draw(Size(w, h), colorFilter = tint) }
             }
