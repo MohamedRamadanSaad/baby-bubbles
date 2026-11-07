@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 
 API = "https://commons.wikimedia.org/w/api.php"
-UA = "BabyBubblesSoundFetcher/1.0 (https://github.com/MohamedRamadanSaad/baby-bubbles; m.ramadansaad@gmail.com)"
+UA = "BabyBubblesSoundFetcher/1.0 (https://github.com/MohamedRamadanSaad/baby-bubbles; maintainer)"
 
 
 def get(url):

@@ -9,7 +9,7 @@ import urllib.parse
 import urllib.request
 
 API = "https://commons.wikimedia.org/w/api.php"
-UA = "BabyBubblesSoundFinder/1.0 (https://github.com/MohamedRamadanSaad/baby-bubbles; m.ramadansaad@gmail.com)"
+UA = "BabyBubblesSoundFinder/1.0 (https://github.com/MohamedRamadanSaad/baby-bubbles; maintainer)"
 
 QUERIES = [line.strip() for line in open(sys.argv[1], encoding="utf-8") if line.strip() and not line.startswith("#")]
 

@@ -1,11 +1,17 @@
 # key | Commons search terms
-sabah | أذكار الصباح
-masaa | أذكار المساء
-adhkar | adhkar
-azkar | azkar morning
-dhikr | dhikr
-tasbih | تسبيح
-alafasy | Alafasy
-afasy | العفاسي
-kursi | آية الكرسي
-subhan | سبحان الله وبحمده
+tiger | tiger roar
+tiger2 | Panthera tigris
+monkey | monkey chatter
+monkey2 | chimpanzee calls
+gorilla | gorilla
+giraffe | giraffe
+zebra | zebra call
+zebra2 | Equus quagga
+hippo | hippopotamus
+crocodile | crocodile hiss
+crocodile2 | alligator bellow
+bear | bear growl
+bear2 | Ursus arctos
+wolf | wolf howl
+snake | snake hiss
+jungle | rainforest ambience
