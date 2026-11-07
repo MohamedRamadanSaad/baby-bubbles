@@ -33,6 +33,7 @@ class SceneArt(
     val bird: Painter,
     val fish: Painter,
     val fish2: Painter,
+    val jungleTree: Painter,
 )
 
 private class SkyKey(val t: Float, val top: Color, val bottom: Color)
@@ -150,6 +151,7 @@ fun DrawScope.drawLandScene(e: GameEngine, art: SceneArt) {
     }
 
     val hh = e.hillsHeight
+    if (e.mode == GameMode.JUNGLE) drawJungleTrees(e, art, cloudTint)
     val groundTint = lerp(lerp(Color.White, Color(0xFFC3CFC3), rain * 0.5f), Color(0xFF4A5A8C), night * 0.75f)
     translate(0f, size.height - hh) {
         with(art.hills) { draw(Size(size.width, hh), colorFilter = modulate(groundTint)) }
@@ -317,4 +319,22 @@ fun DrawScope.drawSeaScene(e: GameEngine, art: SceneArt) {
     }
 
     drawWalkers(e, art)
+}
+
+
+/** Big leafy trees standing behind the hills in the jungle scene, dimmed at night. */
+private fun DrawScope.drawJungleTrees(e: GameEngine, art: SceneArt, @Suppress("UNUSED_PARAMETER") cloudTint: Color) {
+    val d = e.density
+    val tint = modulate(sceneTint(e.time))
+    val base = size.height - e.hillsHeight * 0.45f
+    for ((fx, scale) in listOf(-0.06f to 1.25f, 0.62f to 1.0f, 0.3f to 0.75f, 0.86f to 0.85f)) {
+        val w = 150f * d * scale
+        val h = w * 160f / 120f
+        val sway = sin(e.time * 0.7f + fx * 10f) * 1.5f
+        androidx.compose.ui.graphics.drawscope.rotate(sway, pivot = Offset(size.width * fx + w / 2f, base)) {
+            translate(size.width * fx, base - h) {
+                with(art.jungleTree) { draw(Size(w, h), colorFilter = tint) }
+            }
+        }
+    }
 }

@@ -63,6 +63,7 @@ fun GameScreen(engine: GameEngine, characters: List<Character>, modifier: Modifi
         bird = painterResource(R.drawable.bird_sparrow),
         fish = painterResource(R.drawable.sea_clownfish),
         fish2 = painterResource(R.drawable.sea_bluetang),
+        jungleTree = painterResource(R.drawable.scene_jungle_tree),
     )
 
     Canvas(

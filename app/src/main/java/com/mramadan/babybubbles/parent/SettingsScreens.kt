@@ -77,6 +77,7 @@ import kotlinx.coroutines.delay
 private val ModeNames = mapOf(
     GameMode.COLORS to "الألوان والأذكار",
     GameMode.ANIMALS to "الحيوانات",
+    GameMode.JUNGLE to "حيوانات الغابة",
     GameMode.VEHICLES to "المواصلات",
     GameMode.BIRDS to "الطيور",
     GameMode.FRUITS to "الفواكه",

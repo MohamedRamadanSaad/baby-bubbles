@@ -135,6 +135,8 @@ fun HomeScreen(
 ) = Rtl {
     val cat = painterResource(R.drawable.animal_cat)
     val duck = painterResource(R.drawable.animal_duck)
+    val tiger = painterResource(R.drawable.jungle_tiger)
+    val monkey = painterResource(R.drawable.jungle_monkey)
     val car = painterResource(R.drawable.veh_car)
     val plane = painterResource(R.drawable.veh_airplane)
     val parrot = painterResource(R.drawable.bird_parrot)
@@ -153,6 +155,11 @@ fun HomeScreen(
         ModeOption(GameMode.ANIMALS, "الحيوانات") {
             inBubble(cat, Offset(30.dp.toPx(), 50.dp.toPx()), 28.dp.toPx())
             inBubble(duck, Offset(78.dp.toPx(), 30.dp.toPx()), 24.dp.toPx())
+        },
+        ModeOption(GameMode.JUNGLE, "الغابة") {
+            drawRoundRect(Color(0xFFDFF3D6), cornerRadius = CornerRadius(16.dp.toPx()))
+            inBubble(tiger, Offset(30.dp.toPx(), 50.dp.toPx()), 28.dp.toPx())
+            inBubble(monkey, Offset(78.dp.toPx(), 30.dp.toPx()), 24.dp.toPx())
         },
         ModeOption(GameMode.VEHICLES, "المواصلات") {
             inBubble(car, Offset(30.dp.toPx(), 50.dp.toPx()), 28.dp.toPx())

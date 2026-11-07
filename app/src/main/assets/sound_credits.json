@@ -280,6 +280,78 @@
   "artist": "The user Felix.Blume https://freesound.org/people/felix.blume/"
  },
  {
+  "sound": "snd_tiger",
+  "title": "File:439280 schots angry-tiger.wav",
+  "page": "https://commons.wikimedia.org/wiki/File:439280_schots_angry-tiger.wav",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "artist": "schots"
+ },
+ {
+  "sound": "snd_monkey",
+  "title": "File:Pant-hoot call made by a male chimpanzee.ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Pant-hoot_call_made_by_a_male_chimpanzee.ogg",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+  "artist": "Pawel Fedurek et al."
+ },
+ {
+  "sound": "snd_giraffe",
+  "title": "File:Giraffe grunt.oga",
+  "page": "https://commons.wikimedia.org/wiki/File:Giraffe_grunt.oga",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Anton Baotic, Florian Sicks and Angela S. Stoeger"
+ },
+ {
+  "sound": "snd_zebra",
+  "title": "File:Grévys zebra (Sound Effects).ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Gr%C3%A9vys_zebra_(Sound_Effects).ogg",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "DiegoC472"
+ },
+ {
+  "sound": "snd_hippo",
+  "title": "File:Hippopotamus sound effect.wav",
+  "page": "https://commons.wikimedia.org/wiki/File:Hippopotamus_sound_effect.wav",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "artist": "Zagzav12"
+ },
+ {
+  "sound": "snd_crocodile",
+  "title": "File:Alligatorbellowedit.ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Alligatorbellowedit.ogg",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "artist": "Borisblue"
+ },
+ {
+  "sound": "snd_bear",
+  "title": "File:Yellowstone sound library - Grizzly Bears Roar - 001.mp3",
+  "page": "https://commons.wikimedia.org/wiki/File:Yellowstone_sound_library_-_Grizzly_Bears_Roar_-_001.mp3",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "artist": "NPS &amp; MSU Acoustic Atlas / Jennifer Jerrett"
+ },
+ {
+  "sound": "snd_wolf",
+  "title": "File:Wolf howls.ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Wolf_howls.ogg",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "artist": ""
+ },
+ {
+  "sound": "snd_snake",
+  "title": "File:Rattlesnake.ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Rattlesnake.ogg",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "artist": ""
+ },
+ {
   "sound": "snd_bubbles",
   "title": "File:Toberbreedia water bubbling.opus",
   "page": "https://commons.wikimedia.org/wiki/File:Toberbreedia_water_bubbling.opus",

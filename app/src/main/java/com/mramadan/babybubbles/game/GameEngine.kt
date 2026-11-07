@@ -320,6 +320,10 @@ class GameEngine(private val events: GameEvents) {
             }
             GameMode.FRUITS, GameMode.FLAGS ->
                 walkers += Walker(WalkerKind.BUTTERFLY, width * 0.3f, 1f, 45f * d, 0f)
+            GameMode.JUNGLE -> {
+                walkers += Walker(WalkerKind.BUTTERFLY, width * 0.3f, 1f, 45f * d, 0f)
+                walkers += Walker(WalkerKind.BIRD, width * 0.6f, 1f, 50f * d, 0.22f)
+            }
             GameMode.SEA -> {
                 walkers += Walker(WalkerKind.FISH, width * 0.1f, 1f, 35f * d, 0.3f)
                 walkers += Walker(WalkerKind.FISH2, width * 0.8f, -1f, 28f * d, 0.62f)

@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.RawRes
 import com.mramadan.babybubbles.R
 
-enum class GameMode { COLORS, ANIMALS, VEHICLES, BIRDS, FRUITS, SEA, FLAGS }
+enum class GameMode { COLORS, ANIMALS, JUNGLE, VEHICLES, BIRDS, FRUITS, SEA, FLAGS }
 
 /** How a character leaves after its bubble pops. */
 enum class PopStyle { JUMP, DRIVE, RISE }
@@ -52,6 +52,21 @@ object Catalog {
         Character(R.drawable.animal_frog, R.raw.snd_frog, "ضِفْدَع", "Frog"),
         Character(R.drawable.animal_camel, R.raw.snd_camel, "جَمَل", "Camel"),
         Character(R.drawable.animal_owl, R.raw.snd_owl, "بُومَة", "Owl"),
+    )
+
+    val jungle = listOf(
+        Character(R.drawable.animal_lion, R.raw.snd_lion, "أَسَد", "Lion"),
+        Character(R.drawable.jungle_tiger, R.raw.snd_tiger, "نَمِر", "Tiger"),
+        Character(R.drawable.jungle_monkey, R.raw.snd_monkey, "قِرْد", "Monkey"),
+        Character(R.drawable.jungle_giraffe, R.raw.snd_giraffe, "زَرَافَة", "Giraffe"),
+        Character(R.drawable.jungle_zebra, R.raw.snd_zebra, "حِمَارٌ وَحْشِي", "Zebra"),
+        Character(R.drawable.jungle_hippo, R.raw.snd_hippo, "فَرَسُ النَّهْر", "Hippo"),
+        Character(R.drawable.jungle_crocodile, R.raw.snd_crocodile, "تِمْسَاح", "Crocodile"),
+        Character(R.drawable.jungle_bear, R.raw.snd_bear, "دُبّ", "Bear"),
+        Character(R.drawable.jungle_wolf, R.raw.snd_wolf, "ذِئْب", "Wolf"),
+        Character(R.drawable.jungle_snake, R.raw.snd_snake, "ثُعْبَان", "Snake"),
+        Character(R.drawable.animal_elephant, R.raw.snd_elephant, "فِيل", "Elephant"),
+        Character(R.drawable.bird_parrot, R.raw.snd_parrot, "بَبَّغَاء", "Parrot"),
     )
 
     val birds = listOf(
@@ -139,6 +154,7 @@ object Catalog {
     fun forMode(mode: GameMode): List<Character> = when (mode) {
         GameMode.COLORS -> emptyList()
         GameMode.ANIMALS -> animals
+        GameMode.JUNGLE -> jungle
         GameMode.VEHICLES -> vehicles
         GameMode.BIRDS -> birds
         GameMode.FRUITS -> fruits
@@ -146,8 +162,8 @@ object Catalog {
         GameMode.FLAGS -> flags
     }
 
-    val all: List<Character> get() = animals + birds + vehicles + fruits + sea + flags
+    val all: List<Character> get() = animals + jungle + birds + vehicles + fruits + sea + flags
 
     /** Spoken on each pop in colors mode, in turn. */
-    val praise = listOf("سُبْحَانَ اللَّه", "الْحَمْدُ لِلَّه", "اللَّهُ أَكْبَر")
+    val praise = listOf("سُبحانَ الله.", "الحَمدُ لله.", "اللهُ أكبر.")
 }

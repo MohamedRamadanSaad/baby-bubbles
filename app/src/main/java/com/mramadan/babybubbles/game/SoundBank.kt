@@ -50,14 +50,46 @@ class Speaker(context: Context) : TextToSpeech.OnInitListener {
         }
     }
 
+    private val chosenVoices = HashMap<String, android.speech.tts.Voice?>()
+
+    /**
+     * The most natural installed voice for a language: on the phone (no network),
+     * highest quality first, and for Arabic a Gulf or standard voice before others.
+     */
+    private fun bestVoice(locale: Locale): android.speech.tts.Voice? = chosenVoices.getOrPut(locale.language) {
+        runCatching {
+            tts.voices
+                ?.filter { v ->
+                    v.locale.language == locale.language &&
+                        !v.features.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)
+                }
+                ?.sortedWith(
+                    compareBy<android.speech.tts.Voice>(
+                        { it.isNetworkConnectionRequired },
+                        { -it.quality },
+                        { if (locale.language == "ar") (if (it.locale.country in setOf("SA", "AE", "XA", "")) 0 else 1) else 0 },
+                        { it.latency },
+                    )
+                )
+                ?.firstOrNull()
+        }.getOrNull()
+    }
+
     fun say(text: String, locale: Locale) {
         if (!ready) return
         val result = tts.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) return
-        // English is slowed right down so each sound of the word is clear for small children.
+        bestVoice(locale)?.let { runCatching { tts.voice = it } }
         val english = locale.language == "en"
-        tts.setSpeechRate(if (english) 0.62f else 0.85f)
-        tts.setPitch(if (english) 1.15f else 1.1f)
+        if (english) {
+            // Slowed right down so each sound of the word is clear for small children.
+            tts.setSpeechRate(0.62f)
+            tts.setPitch(1.15f)
+        } else {
+            // Arabic at a natural pace and pitch, so it sounds like a person speaking, not reading.
+            tts.setSpeechRate(0.95f)
+            tts.setPitch(1.0f)
+        }
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "speak")
     }
 
