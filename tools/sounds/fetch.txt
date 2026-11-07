@@ -56,3 +56,5 @@ crocodile | Alligatorbellowedit.ogg
 bear | Yellowstone sound library - Grizzly Bears Roar - 001.mp3
 wolf | Wolf howls.ogg
 snake | Rattlesnake.ogg
+applause | Clapping hurray (cropped).oga
+fireworks | Fireworks in distance 3.ogg
