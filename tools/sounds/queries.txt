@@ -1,17 +1,10 @@
 # key | Commons search terms
-tiger | tiger roar
-tiger2 | Panthera tigris
-monkey | monkey chatter
-monkey2 | chimpanzee calls
-gorilla | gorilla
-giraffe | giraffe
-zebra | zebra call
-zebra2 | Equus quagga
-hippo | hippopotamus
-crocodile | crocodile hiss
-crocodile2 | alligator bellow
-bear | bear growl
-bear2 | Ursus arctos
-wolf | wolf howl
-snake | snake hiss
-jungle | rainforest ambience
+gorilla | gorilla chest beating
+gorilla2 | Gorilla gorilla vocalization
+gorilla3 | gorilla grunt
+zebra | zebra barking
+zebra2 | Burchell's zebra
+zebra3 | zebra sound
+snake | rattlesnake
+snake2 | hissing sound
+snake3 | snake sound
