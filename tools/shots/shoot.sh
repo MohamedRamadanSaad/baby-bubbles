@@ -31,9 +31,10 @@ play_mode() {
   local label="$1" name="$2"
   launch
   tap_text "$label"; sleep 1
+  adb shell input swipe 540 1800 540 700 300; sleep 1
   tap_text "ابدأ اللعب"; sleep 3
-  dismiss_pin
-  sleep 9
+  dismiss_pin; sleep 2; dismiss_pin
+  sleep 12
   shot "$name"
   # Pop a couple of bubbles near the middle so the pop effect shows.
   adb shell input tap 540 1300; sleep 0.4
@@ -60,8 +61,8 @@ adb shell input swipe 540 1800 540 600 400; sleep 1
 tap_text "صيد الطيور"; sleep 2
 shot 07_hunt_setup
 tap_text "ابدأ المباراة"; sleep 2
-dismiss_pin
-sleep 6
+dismiss_pin; sleep 2; dismiss_pin
+sleep 5
 shot 08_hunt_play
 sleep 3
 shot 09_hunt_play2
