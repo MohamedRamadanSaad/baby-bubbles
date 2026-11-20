@@ -17,14 +17,19 @@ tap_text() {
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "shot $1"; }
 
 launch() {
+  adb shell am task lock stop >/dev/null 2>&1 || true
+  adb shell input keyevent KEYCODE_HOME
   adb shell am force-stop $PKG
   adb shell am start -W -n $PKG/.MainActivity >/dev/null
   sleep 4
 }
 
 dismiss_pin() {
-  # Accept the "pin this app" prompt if Android shows one.
-  for t in "Got it" "GOT IT" "OK" "Start" "START" "Pin"; do tap_text "$t"; done
+  # Accept the "pin this app" / full-screen hints if Android shows them.
+  for i in 1 2 3; do
+    sleep 2
+    for t in "Got it" "GOT IT" "OK" "Start" "START" "Pin"; do tap_text "$t"; done
+  done
 }
 
 play_mode() {
@@ -33,8 +38,8 @@ play_mode() {
   tap_text "$label"; sleep 1
   adb shell input swipe 540 1800 540 700 300; sleep 1
   tap_text "ابدأ اللعب"; sleep 3
-  dismiss_pin; sleep 2; dismiss_pin
-  sleep 12
+  dismiss_pin
+  sleep 10
   shot "$name"
   # Pop a couple of bubbles near the middle so the pop effect shows.
   adb shell input tap 540 1300; sleep 0.4
@@ -46,6 +51,7 @@ adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 1
 adb shell cmd uimode night no || true
+adb shell settings put secure immersive_mode_confirmations confirmed
 adb install -r baby-bubbles.apk
 
 launch
@@ -61,8 +67,8 @@ adb shell input swipe 540 1800 540 600 400; sleep 1
 tap_text "صيد الطيور"; sleep 2
 shot 07_hunt_setup
 tap_text "ابدأ المباراة"; sleep 2
-dismiss_pin; sleep 2; dismiss_pin
-sleep 5
+dismiss_pin
+sleep 4
 shot 08_hunt_play
 sleep 3
 shot 09_hunt_play2
