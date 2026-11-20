@@ -8,12 +8,12 @@ val buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
 
 android {
     namespace = "com.mramadan.babybubbles"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mramadan.babybubbles"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = buildNumber
         versionName = "0.1.$buildNumber"
     }
@@ -31,6 +31,12 @@ android {
     buildTypes {
         debug {
             signingConfig = signingConfigs.getByName("debug")
+        }
+        // The Play build. Built unsigned here; it is signed with the upload key outside
+        // this public repository, and Google re-signs it with the app signing key.
+        release {
+            isMinifyEnabled = false
+            signingConfig = null
         }
     }
 
