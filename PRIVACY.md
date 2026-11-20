@@ -16,7 +16,7 @@
 
 **الأطفال:** التطبيق موجّه للأطفال، ولا يجمع منهم أي معلومات شخصية. كل الإعدادات خلف بوابة للوالدين (مسألة حسابية بسيطة).
 
-**التواصل:** لأي سؤال عن الخصوصية راسلنا على m.ramadansaad@gmail.com
+**التواصل:** لأي سؤال عن الخصوصية راسلنا على m.ramadansaadksa@gmail.com
 
 ---
 
@@ -38,4 +38,4 @@ Last updated: 20 November 2026
 
 **Children:** The app is made for children and collects no personal information from them. All settings are behind a parent gate (a simple sum).
 
-**Contact:** For any privacy question, email m.ramadansaad@gmail.com
+**Contact:** For any privacy question, email m.ramadansaadksa@gmail.com

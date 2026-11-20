@@ -4,7 +4,7 @@
 
 **App name (≤30):** فقاعات - لعبة الأطفال
 
-**Short description (≤80):** فرقع الفقاعات واسمع أصوات الحيوانات وأسماءها. لعبة آمنة لأصغر الأيدي
+**Short description (≤80):** فرقع الفقاعات واسمع أصوات الحيوانات وأسماءها. لعبة آمنة للصغار مع تجميد الشاشة
 
 **Full description:**
 «فقاعات» لعبة هادئة وممتعة للأطفال الصغار. يلمس الطفل الفقاعة فتنفجر، ويخرج منها حيوان أو طائر أو سيارة أو فاكهة، ويسمع صوتها الحقيقي واسمها بالعربية أو الإنجليزية.
@@ -63,8 +63,8 @@ Made for parents:
 Fully private: no internet, no ads, no accounts, no data collected.
 
 ## Other answers
-- Category: Game → Educational (tags: Kids, Casual)
-- Contact email: m.ramadansaad@gmail.com
+- Category: Game → Educational
+- Contact email: m.ramadansaadksa@gmail.com
 - Privacy policy: https://github.com/MohamedRamadanSaad/baby-bubbles/blob/main/PRIVACY.md
 - Ads: No
 - Target age: 5 and under
