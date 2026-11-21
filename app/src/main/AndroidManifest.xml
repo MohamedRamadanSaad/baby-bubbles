@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Only used in the parent settings to record name pronunciations; files stay on the phone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Only to know when the phone rings, so the parent question appears. No number or contact is read. -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <!-- Needed on Android 11+ to find the phone's text-to-speech engine. -->
     <queries>

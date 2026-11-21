@@ -190,6 +190,29 @@ fun SettingsScreen(
             }
             HorizontalDivider(color = Palette.Divider)
             SettingRow("اهتزاز خفيف عند الفرقعة") { PurpleSwitch(prefs.vibrate) { prefs.vibrate = it } }
+            HorizontalDivider(color = Palette.Divider)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("أقصى إضاءة أثناء اللعب", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Palette.Ink,
+                    modifier = Modifier.weight(1f))
+                Text("${prefs.brightnessCap.arabicDigits()}٪", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Purple)
+            }
+            androidx.compose.material3.Slider(
+                value = prefs.brightnessCap.toFloat(),
+                onValueChange = { prefs.brightnessCap = (Math.round(it / 10f) * 10) },
+                valueRange = 10f..100f,
+                steps = 8,
+                colors = androidx.compose.material3.SliderDefaults.colors(
+                    thumbColor = Palette.Purple,
+                    activeTrackColor = Palette.Purple,
+                    activeTickColor = Color.White,
+                    inactiveTrackColor = Palette.ProgressTrack,
+                ),
+            )
+            Text("عند بدء اللعب: إذا كانت إضاءة الشاشة أعلى من هذا الرقم تنخفض إليه، وإذا كانت أقل تبقى كما هي. وتعود بعد الخروج.",
+                fontSize = 13.sp, lineHeight = 19.sp, color = Palette.Muted, modifier = Modifier.padding(bottom = 8.dp))
         }
 
         val namesOn = prefs.soundType == SoundType.ITEM_SOUNDS

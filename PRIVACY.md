@@ -1,12 +1,16 @@
 # سياسة الخصوصية — تطبيق «فقاعات»
 
-آخر تحديث: ٢٠ نوفمبر ٢٠٢٦
+آخر تحديث: ٢١ نوفمبر ٢٠٢٦
 
 «فقاعات» لعبة للأطفال الصغار، يطوّرها محمد رمضان سعد. صمّمنا التطبيق بحيث لا يجمع أي بيانات عن الطفل أو عن الأسرة.
 
 **البيانات التي نجمعها:** لا شيء. التطبيق لا يحتاج إذن الإنترنت أصلًا، فلا يرسل أي معلومة إلى خارج الجهاز. لا توجد فيه حسابات، ولا إعلانات، ولا أدوات تحليل أو تتبّع، ولا مكتبات من أطراف خارجية تجمع بيانات.
 
 **الميكروفون:** يُستخدم فقط عندما يختار أحد الوالدين، من داخل إعدادات الوالدين المحميّة، تسجيل صوته لأسماء العناصر أو للأذكار. هذه التسجيلات تُحفظ داخل التطبيق على الجهاز نفسه فقط، ولا تُرفع إلى أي مكان. وتُحذف عند حذف التطبيق أو مسح بياناته.
+
+**إذن الهاتف:** يُطلب فقط لمعرفة أن الهاتف يرن، فيظهر سؤال الأب ولا يستطيع الطفل الرد على المكالمة بنفسه. لا يقرأ التطبيق رقم المتصل ولا جهات الاتصال ولا سجل المكالمات.
+
+**الإضاءة:** يخفض التطبيق إضاءة نافذته فقط أثناء اللعب إلى الحد الذي يختاره الوالد، دون تغيير إعدادات الهاتف.
 
 **الملفات الصوتية:** إذا اختار الوالد ملفًا صوتيًا من الجهاز ليعمل في الخلفية، يقرؤه التطبيق من مكانه على الجهاز فقط.
 
@@ -22,13 +26,17 @@
 
 # Privacy Policy — "Bubbles" (فقاعات)
 
-Last updated: 20 November 2026
+Last updated: 21 November 2026
 
 "Bubbles" is a game for young children, developed by Mohamed Ramadan Saad. It is designed to collect no data about the child or the family.
 
 **Data we collect:** None. The app does not request internet access, so nothing ever leaves the device. There are no accounts, no ads, no analytics or tracking, and no third-party SDKs that collect data.
 
 **Microphone:** Used only when a parent, inside the protected parent settings, chooses to record their own voice for item names or for azkar. These recordings are stored privately inside the app on the device only and are never uploaded. They are deleted when the app is uninstalled or its data is cleared.
+
+**Phone permission:** Requested only to know that the phone is ringing, so the parent question appears and the child cannot answer the call alone. The app never reads the caller's number, contacts or call log.
+
+**Brightness:** While a child plays, the app dims only its own window to the level the parent chose, without changing the phone's settings.
 
 **Audio files:** If a parent picks an audio file from the device to play in the background, the app reads it in place on the device only.
 

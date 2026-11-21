@@ -93,6 +93,16 @@ class Settings(context: Context) {
         get() = prefs.getInt("huntSeconds", 120)
         set(value) = prefs.edit().putInt("huntSeconds", value).apply()
 
+    /** Highest screen brightness while a child plays, in percent (10–100). */
+    var brightnessCap: Int
+        get() = prefs.getInt("brightnessCap", 50).coerceIn(10, 100)
+        set(value) = prefs.edit().putInt("brightnessCap", value.coerceIn(10, 100)).apply()
+
+    /** The parent asked not to see the opening notice again. */
+    var introHidden: Boolean
+        get() = prefs.getBoolean("introHidden", false)
+        set(value) = prefs.edit().putBoolean("introHidden", value).apply()
+
     /** A picked file for a slot (an earlier single file counts as the morning one). */
     fun slotUri(slot: AzkarSlot): String? =
         prefs.getString("${slot.key}Uri", null) ?: if (slot == AzkarSlot.MORNING) prefs.getString("azkarUri", null) else null
@@ -168,6 +178,11 @@ class LivePrefs(private val store: Settings) {
     var azkarWhich: AzkarWhich
         get() = _azkarWhich.value
         set(v) { _azkarWhich.value = v; store.azkarWhich = v }
+
+    private val _brightnessCap = androidx.compose.runtime.mutableIntStateOf(store.brightnessCap)
+    var brightnessCap: Int
+        get() = _brightnessCap.intValue
+        set(v) { _brightnessCap.intValue = v.coerceIn(10, 100); store.brightnessCap = v }
 
     private val slotUris = AzkarSlot.entries.associateWith { androidx.compose.runtime.mutableStateOf(store.slotUri(it)) }
     private val slotNames = AzkarSlot.entries.associateWith { androidx.compose.runtime.mutableStateOf(store.slotName(it)) }

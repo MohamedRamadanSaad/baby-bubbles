@@ -23,10 +23,11 @@
 لعبة صيد الطيور: لعبة لاعبَين. حرّك المنظار واضغط «ضرب»، واجمع نقاطًا أكثر من منافسك في الوقت المحدد، ثم تظهر شاشة الفائز مع الألعاب النارية.
 
 مصمَّمة للوالدين:
-• قفل الشاشة: لا يخرج الطفل من اللعبة بالخطأ. للخروج اضغط زرّي رفع الصوت وخفضه معًا ٣ ثوانٍ، ثم حُلّ مسألة جمع بسيطة.
+• قفل الشاشة: لا يخرج الطفل من اللعبة بالخطأ. للخروج اضغط زر رفع الصوت ثانيتين، ثم حُلّ مسألة جمع بسيطة.
 • سجّل صوتك أنت (الأب أو الأم) ليسمع الطفل أسماء الأشياء بصوتك.
 • أذكار الصباح والمساء في الخلفية أثناء اللعب، من ملف تختاره أو من تسجيلك.
-• عند ورود مكالمة تظهر شاشة خاصة، والرد يكون للوالد فقط.
+• عند ورود مكالمة يظهر سؤال الأب فورًا، ولا يرد الطفل إلا بعد الإجابة.
+• تنخفض إضاءة الشاشة أثناء اللعب إلى الحد الذي تختاره.
 • تحكّم في السرعة، وعدد الفقاعات، ولغة الأسماء، والاهتزاز.
 
 خصوصية كاملة: بلا إنترنت، بلا إعلانات، بلا حسابات، ولا نجمع أي بيانات.
@@ -54,10 +55,11 @@ The sky changes as they play: sunrise, sunshine, gathering rain clouds and rain,
 Bird hunt: a two-player game. Move the crosshair, press fire, and score more points than your opponent before time runs out. The winner gets fireworks.
 
 Made for parents:
-• Screen lock so little hands can't leave the game. To exit, hold volume up and volume down together for 3 seconds, then answer a simple sum.
+• Screen lock so little hands can't leave the game. To exit, hold volume up for 2 seconds, then answer a simple sum.
 • Record your own voice (dad or mom) so your child hears the names in your voice.
 • Morning and evening azkar in the background, from a file you choose or your own recording.
-• Incoming calls show a special screen that only a parent can answer.
+• Incoming calls bring up the parent question at once; the child cannot answer.
+• Screen brightness is lowered to the level you choose while playing.
 • Control speed, number of bubbles, name language and vibration.
 
 Fully private: no internet, no ads, no accounts, no data collected.

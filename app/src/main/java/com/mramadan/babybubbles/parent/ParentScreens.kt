@@ -131,6 +131,7 @@ fun HomeScreen(
     mode: GameMode,
     onModeChange: (GameMode) -> Unit,
     onSettings: () -> Unit,
+    onInstructions: () -> Unit,
     onHunt: () -> Unit,
     onStart: () -> Unit,
 ) = Rtl {
@@ -209,6 +210,23 @@ fun HomeScreen(
             ) {
                 Canvas(Modifier.size(26.dp)) { gearIcon(Palette.Purple) }
             }
+            Row(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .height(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .selectable(selected = false, role = Role.Button, onClick = onInstructions)
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Box(
+                    Modifier.size(24.dp).clip(CircleShape).background(Palette.Purple),
+                    contentAlignment = Alignment.Center,
+                ) { Text("؟", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color.White) }
+                Text("تعليمات", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Palette.Purple)
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -259,7 +277,7 @@ fun HomeScreen(
                 }
             }
             Text(
-                "للخروج أثناء اللعب: اضغط زري رفع الصوت وخفضه معًا ثلاث ثوانٍ. وعند ورود مكالمة يظهر زر الأب على الشاشة.",
+                "للخروج أثناء اللعب: اضغط زر رفع الصوت ثانيتين ثم أجب عن السؤال. وعند ورود مكالمة يظهر السؤال فورًا.",
                 fontSize = 14.5.sp,
                 lineHeight = 22.sp,
                 color = Palette.TipInk,
@@ -418,87 +436,65 @@ internal fun CreditsDialog(onClose: () -> Unit) {
     )
 }
 
-/** Shown over the game while the phone rings. Only the parent can leave to answer. */
+/** Why the parent question is on screen. */
+enum class GateReason {
+    /** The parent held Volume Up. */
+    PARENT,
+
+    /** The phone is ringing: the child cannot reach the call until the parent answers. */
+    CALL,
+
+    /** Something outside the game took the screen (a notification, another app, the screen turning off). */
+    OUTSIDE,
+}
+
+private const val PHONE_ICON =
+    "M6.6 10.8 C8 13.6 10.4 16 13.2 17.4 L15.4 15.2 C15.7 14.9 16.1 14.8 16.4 15 C17.5 15.4 18.7 15.6 20 15.6 C20.6 15.6 21 16 21 16.6 V20 C21 20.6 20.6 21 20 21 C10.6 21 3 13.4 3 4 C3 3.4 3.4 3 4 3 H7.5 C8.1 3 8.5 3.4 8.5 4 C8.5 5.3 8.7 6.5 9.1 7.6 C9.2 7.9 9.1 8.3 8.9 8.6 Z"
+
+private data class SumQuestion(val a: Int, val b: Int, val options: List<Int>) {
+    val answer get() = a + b
+}
+
+private fun newQuestion(): SumQuestion {
+    // The sum is always below ten, and so are all the choices.
+    val a = Random.nextInt(1, 8)
+    val b = Random.nextInt(1, 10 - a)
+    val options = mutableSetOf(a + b)
+    while (options.size < 4) options += Random.nextInt(2, 10)
+    return SumQuestion(a, b, options.shuffled())
+}
+
+/**
+ * The parent question. For a held key or anything outside the game it closes by itself after
+ * 10 s and a wrong answer returns to the game. For a call it stays while the phone rings, and a
+ * wrong answer only brings a new question after a short pause, so random taps cannot get through.
+ */
 @Composable
-fun CallOverlay(onParent: () -> Unit) = Rtl {
+fun ParentGate(reason: GateReason, onSuccess: () -> Unit, onDismiss: () -> Unit) = Rtl {
+    var question by remember { mutableStateOf(newQuestion()) }
+    var locked by remember { mutableStateOf(false) }
+    val remaining = remember { Animatable(1f) }
+    val timed = reason != GateReason.CALL
+
+    if (timed) {
+        LaunchedEffect(Unit) {
+            remaining.animateTo(0f, tween(durationMillis = 10_000, easing = LinearEasing))
+            onDismiss()
+        }
+    }
+    LaunchedEffect(locked) {
+        if (locked) {
+            kotlinx.coroutines.delay(2_000)
+            question = newQuestion()
+            locked = false
+        }
+    }
     val pulse by rememberInfiniteTransition(label = "ring").animateFloat(
         initialValue = 1f,
-        targetValue = 1.12f,
+        targetValue = if (reason == GateReason.CALL) 1.12f else 1f,
         animationSpec = infiniteRepeatable(tween(500), RepeatMode.Reverse),
         label = "pulse",
     )
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Palette.Scrim.copy(alpha = 0.55f))
-            .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }
-            .padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .shadow(24.dp, RoundedCornerShape(30.dp))
-                .clip(RoundedCornerShape(30.dp))
-                .background(Color.White)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Box(
-                Modifier
-                    .size(72.dp)
-                    .scale(pulse)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE5F4E4)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Canvas(Modifier.size(36.dp)) {
-                    iconPath(
-                        "M6.6 10.8 C8 13.6 10.4 16 13.2 17.4 L15.4 15.2 C15.7 14.9 16.1 14.8 16.4 15 C17.5 15.4 18.7 15.6 20 15.6 C20.6 15.6 21 16 21 16.6 V20 C21 20.6 20.6 21 20 21 C10.6 21 3 13.4 3 4 C3 3.4 3.4 3 4 3 H7.5 C8.1 3 8.5 3.4 8.5 4 C8.5 5.3 8.7 6.5 9.1 7.6 C9.2 7.9 9.1 8.3 8.9 8.6 Z",
-                        Color(0xFF2E9E4F),
-                        strokeWidth = null,
-                    )
-                }
-            }
-            Text("مكالمة واردة", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Ink)
-            Text(
-                "للرد: اضغط الزر ثم أجب عن سؤال الأب، فتُفتح المكالمة.",
-                fontSize = 15.sp,
-                lineHeight = 22.sp,
-                color = Palette.Muted,
-                textAlign = TextAlign.Center,
-            )
-            Button(
-                onClick = onParent,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E9E4F), contentColor = Color.White),
-            ) { Text("أنا الأب — الرد على المكالمة", fontSize = 17.sp, fontWeight = FontWeight.Bold) }
-        }
-    }
-}
-
-/** Shown after the volume-key hold. Wrong answer or 10 s of silence returns to the game. */
-@Composable
-fun ParentGate(onSuccess: () -> Unit, onDismiss: () -> Unit) = Rtl {
-    val question = remember {
-        // The sum is always below ten, and so are all the choices.
-        val a = Random.nextInt(1, 8)
-        val b = Random.nextInt(1, 10 - a)
-        val answer = a + b
-        val options = mutableSetOf(answer)
-        while (options.size < 4) options += Random.nextInt(2, 10)
-        Triple(a, b, options.shuffled() to answer)
-    }
-    val (a, b, rest) = question
-    val (options, answer) = rest
-    val remaining = remember { Animatable(1f) }
-
-    LaunchedEffect(Unit) {
-        remaining.animateTo(0f, tween(durationMillis = 10_000, easing = LinearEasing))
-        onDismiss()
-    }
 
     Box(
         modifier = Modifier
@@ -519,41 +515,71 @@ fun ParentGate(onSuccess: () -> Unit, onDismiss: () -> Unit) = Rtl {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Box(
-                Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(Palette.Track),
-                contentAlignment = Alignment.Center,
-            ) {
-                Canvas(Modifier.size(30.dp)) {
-                    val k = size.width / 24f
-                    scale(k, k, pivot = Offset.Zero) {
-                        drawRoundRect(
-                            Palette.Purple,
-                            topLeft = Offset(5f, 10.5f),
-                            size = Size(14f, 10f),
-                            cornerRadius = CornerRadius(2.5f),
-                            style = Stroke(2f),
-                        )
-                        drawCircle(Palette.Purple, radius = 1.6f, center = Offset(12f, 15.5f))
-                    }
-                    iconPath("M8 10.5 V8 A4 4 0 0 1 16 8 V10.5", Palette.Purple)
+            if (reason == GateReason.CALL) {
+                Box(
+                    Modifier
+                        .size(64.dp)
+                        .scale(pulse)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE5F4E4)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Canvas(Modifier.size(32.dp)) { iconPath(PHONE_ICON, Color(0xFF2E9E4F), strokeWidth = null) }
                 }
+                Text("مكالمة واردة", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Palette.Ink)
+                Text(
+                    "أجب عن السؤال لتخرج من اللعبة وترد على المكالمة.",
+                    fontSize = 15.sp, lineHeight = 22.sp, color = Palette.Muted, textAlign = TextAlign.Center,
+                )
+            } else {
+                Box(
+                    Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(Palette.Track),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Canvas(Modifier.size(30.dp)) {
+                        val k = size.width / 24f
+                        scale(k, k, pivot = Offset.Zero) {
+                            drawRoundRect(
+                                Palette.Purple,
+                                topLeft = Offset(5f, 10.5f),
+                                size = Size(14f, 10f),
+                                cornerRadius = CornerRadius(2.5f),
+                                style = Stroke(2f),
+                            )
+                            drawCircle(Palette.Purple, radius = 1.6f, center = Offset(12f, 15.5f))
+                        }
+                        iconPath("M8 10.5 V8 A4 4 0 0 1 16 8 V10.5", Palette.Purple)
+                    }
+                }
+                Text(
+                    if (reason == GateReason.OUTSIDE) "حدث شيء خارج اللعبة — للأب فقط" else "للأب فقط",
+                    fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Palette.Muted, textAlign = TextAlign.Center,
+                )
             }
-            Text("للأب فقط", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Palette.Muted)
             Text(
-                "كم يساوي ${a.arabicDigits()} + ${b.arabicDigits()}؟",
-                fontSize = 34.sp,
+                if (locked) "إجابة خاطئة… سؤال جديد بعد لحظة"
+                else "كم يساوي ${question.a.arabicDigits()} + ${question.b.arabicDigits()}؟",
+                fontSize = if (locked) 20.sp else 34.sp,
                 lineHeight = 42.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Palette.Ink,
                 textAlign = TextAlign.Center,
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                for (o in options) {
+                for (o in question.options) {
                     OutlinedButton(
-                        onClick = { if (o == answer) onSuccess() else onDismiss() },
+                        onClick = {
+                            when {
+                                locked -> Unit
+                                o == question.answer -> onSuccess()
+                                timed -> onDismiss()
+                                else -> locked = true
+                            }
+                        },
+                        enabled = !locked,
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(20.dp),
                         border = BorderStroke(2.dp, Palette.AnswerBorder),
@@ -563,35 +589,131 @@ fun ParentGate(onSuccess: () -> Unit, onDismiss: () -> Unit) = Rtl {
                     }
                 }
             }
-            Column(
-                Modifier.fillMaxWidth().padding(top = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(CircleShape)
-                        .background(Palette.ProgressTrack)
+            if (timed) {
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Box(
                         Modifier
-                            .fillMaxWidth(remaining.value)
+                            .fillMaxWidth()
                             .height(8.dp)
                             .clip(CircleShape)
-                            .background(Palette.Purple)
+                            .background(Palette.ProgressTrack)
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(remaining.value)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(Palette.Purple)
+                        )
+                    }
+                    Text(
+                        "تعود اللعبة تلقائيًا خلال ١٠ ثوانٍ، والإجابة الخاطئة تعيدها فورًا",
+                        fontSize = 13.5.sp,
+                        color = Palette.Muted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                Text(
-                    "تعود اللعبة تلقائيًا خلال ١٠ ثوانٍ، والإجابة الخاطئة تعيدها فورًا",
-                    fontSize = 13.5.sp,
-                    color = Palette.Muted,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
     }
+}
+
+/** The main points a parent should know, shown in the opening notice and the instructions. */
+private val ParentPoints = listOf(
+    "للخروج من اللعبة: اضغط زر رفع الصوت ثانيتين، ثم أجب عن سؤال الجمع.",
+    "عند ورود مكالمة يظهر السؤال فورًا، ولا يستطيع الطفل الرد أو الخروج قبل الإجابة. بعد الإجابة تظهر لك شاشة المكالمة باسم المتصل كالمعتاد.",
+    "أي شيء يحدث خارج اللعبة، مثل إشعار أو إطفاء الشاشة، يُظهر السؤال أيضًا.",
+    "تنخفض إضاءة الشاشة أثناء اللعب إلى الحد المضبوط في الإعدادات (النصف تلقائيًا) إذا كانت أعلى منه، وتعود كما كانت بعد الخروج.",
+    "لا توجد إعلانات، ولا اتصال بالإنترنت، ولا نجمع أي بيانات.",
+)
+
+@Composable
+private fun PointsList(points: List<String>) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        points.forEach { p ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    Modifier
+                        .padding(top = 8.dp)
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Palette.Purple)
+                )
+                Text(p, fontSize = 15.sp, lineHeight = 23.sp, color = Palette.Ink)
+            }
+        }
+    }
+}
+
+/** Shown when the app opens, before the parent hands the phone to the child. */
+@Composable
+fun IntroDialog(onClose: (hideNextTime: Boolean) -> Unit) = Rtl {
+    var hide by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = { onClose(hide) },
+        title = { Text("تنبيه للوالدين", fontWeight = FontWeight.ExtraBold, color = Palette.Purple) },
+        text = {
+            Column(
+                Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                PointsList(ParentPoints.take(3))
+                Text(
+                    "سنطلب إذن «الهاتف» مرة واحدة، فقط لنعرف أن الهاتف يرن فنُظهر سؤال الأب. لا نقرأ رقم المتصل ولا جهات الاتصال.",
+                    fontSize = 14.sp, lineHeight = 21.sp, color = Palette.Muted,
+                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .selectable(selected = hide, role = Role.Checkbox, onClick = { hide = !hide })
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    androidx.compose.material3.Checkbox(checked = hide, onCheckedChange = null)
+                    Text("لا تُظهر هذا التنبيه مرة أخرى", fontSize = 14.sp, color = Palette.Ink)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onClose(hide) },
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = Palette.Purple, contentColor = Color.White),
+            ) { Text("فهمت", fontWeight = FontWeight.Bold) }
+        },
+    )
+}
+
+/** The instructions button on the home screen opens this. */
+@Composable
+fun InstructionsDialog(onClose: () -> Unit) = Rtl {
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("التعليمات", fontWeight = FontWeight.ExtraBold, color = Palette.Purple) },
+        text = {
+            Column(
+                Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                PointsList(ParentPoints)
+                HorizontalDivider(color = Palette.Divider)
+                PointsList(
+                    listOf(
+                        "اختر قسمًا ثم اضغط «ابدأ اللعب». كل فقاعة يفرقعها الطفل يخرج منها شيء ويُسمع صوته واسمه.",
+                        "صيد الطيور: لعبة لاعبَين بالمنظار وزر «ضرب»، والفائز تظهر له الألعاب النارية.",
+                        "من الإعدادات: سرعة الفقاعات، وعددها، والإضاءة، ولغة الأسماء، وتسجيل صوت بابا وماما، والأذكار أثناء اللعب.",
+                    )
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text("إغلاق", fontWeight = FontWeight.Bold) } },
+    )
 }
 
 

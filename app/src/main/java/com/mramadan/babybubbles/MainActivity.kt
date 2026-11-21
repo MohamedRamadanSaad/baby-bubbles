@@ -12,6 +12,10 @@ import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.app.ActivityManager
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyCallback
+import android.telephony.TelephonyManager
 import android.provider.OpenableColumns
 import android.view.KeyEvent
 import android.view.WindowManager
@@ -38,7 +42,9 @@ import com.mramadan.babybubbles.game.SoundBank
 import com.mramadan.babybubbles.game.Speaker
 import com.mramadan.babybubbles.game.WalkerKind
 import com.mramadan.babybubbles.game.defaultPopSound
-import com.mramadan.babybubbles.parent.CallOverlay
+import com.mramadan.babybubbles.parent.GateReason
+import com.mramadan.babybubbles.parent.InstructionsDialog
+import com.mramadan.babybubbles.parent.IntroDialog
 import com.mramadan.babybubbles.parent.HomeScreen
 import com.mramadan.babybubbles.parent.ParentGate
 import com.mramadan.babybubbles.parent.RecordHomeScreen
@@ -63,7 +69,9 @@ sealed interface Screen {
 class MainActivity : ComponentActivity(), GameEvents {
 
     private var playing by mutableStateOf(false)
-    private var showGate by mutableStateOf(false)
+    private var gate by mutableStateOf<GateReason?>(null)
+    private var showIntro by mutableStateOf(false)
+    private var showInstructions by mutableStateOf(false)
     private var ringing by mutableStateOf(false)
     private var screen by mutableStateOf<Screen>(Screen.Home)
     private var recordParent by mutableStateOf(Parent.DAD)
@@ -99,6 +107,10 @@ class MainActivity : ComponentActivity(), GameEvents {
         }
     }
 
+    private val phonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) listenForCalls()
+    }
+
     private var afterMicGranted: (() -> Unit)? = null
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) afterMicGranted?.invoke()
@@ -119,11 +131,9 @@ class MainActivity : ComponentActivity(), GameEvents {
         }
     }
 
-    // Parent key: hold Volume Up + Volume Down together for 3 seconds.
-    private var volUpDown = false
-    private var volDownDown = false
+    // Parent key: hold Volume Up for 2 seconds.
     private var holdArmed = false
-    private val openGate = Runnable { if (playing) showGate = true }
+    private val openGate = Runnable { if (playing && gate == null) gate = GateReason.PARENT }
 
     /**
      * While the phone rings, Android itself takes the volume keys (to silence the
@@ -133,19 +143,109 @@ class MainActivity : ComponentActivity(), GameEvents {
     private val callWatch = object : Runnable {
         override fun run() {
             if (!playing) return
-            val now = audioManager?.mode == AudioManager.MODE_RINGTONE
-            if (now != ringing) {
-                ringing = now
-                if (now) {
-                    azkar.pause()
-                    azkarPausedForCall = true
-                } else if (azkarPausedForCall) {
-                    azkar.resume()
-                    azkarPausedForCall = false
-                }
-            }
-            handler.postDelayed(this, 500)
+            updateRinging()
+            handler.postDelayed(this, 400)
         }
+    }
+
+    /** Ringing as the phone reports it, if the parent allowed it; set from the telephony callback. */
+    @Volatile private var phoneRinging = false
+
+    private fun updateRinging() {
+        val now = phoneRinging || audioManager?.mode == AudioManager.MODE_RINGTONE
+        if (now == ringing) return
+        ringing = now
+        if (now) {
+            azkar.pause()
+            azkarPausedForCall = true
+            // The question comes up at once: the child cannot answer or leave on their own.
+            if (playing) gate = GateReason.CALL
+        } else {
+            if (azkarPausedForCall) {
+                azkar.resume()
+                azkarPausedForCall = false
+            }
+            if (gate == GateReason.CALL) gate = null
+        }
+    }
+
+    private val telephony by lazy { getSystemService(TelephonyManager::class.java) }
+    private var callbackRegistered = false
+    private var telephonyCallback: Any? = null
+
+    /** Listens for the phone's call state. Needs the phone permission; without it, the audio mode is used. */
+    private fun listenForCalls() {
+        if (callbackRegistered) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) return
+        val tm = telephony ?: return
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val cb = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                    override fun onCallStateChanged(state: Int) = onPhoneState(state)
+                }
+                tm.registerTelephonyCallback(mainExecutor, cb)
+                telephonyCallback = cb
+            } else {
+                @Suppress("DEPRECATION")
+                val l = object : PhoneStateListener() {
+                    @Deprecated("Deprecated in Java")
+                    override fun onCallStateChanged(state: Int, phoneNumber: String?) = onPhoneState(state)
+                }
+                @Suppress("DEPRECATION")
+                tm.listen(l, PhoneStateListener.LISTEN_CALL_STATE)
+                telephonyCallback = l
+            }
+            callbackRegistered = true
+        }
+    }
+
+    private fun onPhoneState(state: Int) {
+        phoneRinging = state == TelephonyManager.CALL_STATE_RINGING
+        handler.post { if (playing) updateRinging() }
+    }
+
+    private fun stopListeningForCalls() {
+        val tm = telephony ?: return
+        val cb = telephonyCallback ?: return
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && cb is TelephonyCallback) {
+                tm.unregisterTelephonyCallback(cb)
+            } else if (cb is PhoneStateListener) {
+                @Suppress("DEPRECATION")
+                tm.listen(cb, PhoneStateListener.LISTEN_NONE)
+            }
+        }
+        telephonyCallback = null
+        callbackRegistered = false
+    }
+
+    /** True once the screen is really pinned (not while Android still asks to confirm the pin). */
+    private fun pinned(): Boolean = runCatching {
+        getSystemService(ActivityManager::class.java)?.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
+    }.getOrDefault(false)
+
+    /** Anything outside the game that takes the screen brings up the question, so the parent can always leave. */
+    private fun outsideEvent() {
+        if (playing && gate == null && pinned()) gate = GateReason.OUTSIDE
+    }
+
+    // ---- Brightness ----------------------------------------------------------
+
+    /** Lowers this window's brightness to the parent's cap when the screen is brighter; never raises it. */
+    private fun applyBrightnessCap() {
+        val cap = prefs.brightnessCap / 100f
+        val current = runCatching {
+            android.provider.Settings.System.getInt(contentResolver, android.provider.Settings.System.SCREEN_BRIGHTNESS) / 255f
+        }.getOrDefault(1f).coerceIn(0f, 1f)
+        val lp = window.attributes
+        lp.screenBrightness = if (current > cap) cap else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = lp
+    }
+
+    private fun restoreBrightness() {
+        val lp = window.attributes
+        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = lp
     }
 
     private val blockBack = object : OnBackPressedCallback(false) {
@@ -168,6 +268,8 @@ class MainActivity : ComponentActivity(), GameEvents {
         voicePlayer = VoicePlayer(this)
         azkar = AzkarPlayer(this)
         onBackPressedDispatcher.addCallback(this, blockBack)
+        showIntro = savedInstanceState == null && !settingsStore.introHidden
+        listenForCalls()
 
         setContent {
             BabyTheme {
@@ -207,12 +309,14 @@ class MainActivity : ComponentActivity(), GameEvents {
                         } else {
                             GameScreen(engine, characters)
                         }
-                        if (ringing && !showGate) CallOverlay(onParent = { showGate = true })
-                        if (showGate) {
-                            ParentGate(
-                                onSuccess = { exitPlay() },
-                                onDismiss = { showGate = false },
-                            )
+                        gate?.let { reason ->
+                            androidx.compose.runtime.key(reason) {
+                                ParentGate(
+                                    reason = reason,
+                                    onSuccess = { exitPlay() },
+                                    onDismiss = { gate = null },
+                                )
+                            }
                         }
                     }
                 } else {
@@ -221,6 +325,7 @@ class MainActivity : ComponentActivity(), GameEvents {
                             mode = prefs.mode,
                             onModeChange = { prefs.mode = it },
                             onSettings = { screen = Screen.Settings },
+                            onInstructions = { showInstructions = true },
                             onHunt = { screen = Screen.HuntSetup },
                             onStart = { startPlay() },
                         )
@@ -272,8 +377,22 @@ class MainActivity : ComponentActivity(), GameEvents {
                             },
                         )
                     }
+                    if (showIntro && screen == Screen.Home) {
+                        IntroDialog { hide ->
+                            showIntro = false
+                            if (hide) settingsStore.introHidden = true
+                            askPhonePermission()
+                        }
+                    }
+                    if (showInstructions) InstructionsDialog { showInstructions = false }
                 }
             }
+        }
+    }
+
+    private fun askPhonePermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            runCatching { phonePermission.launch(Manifest.permission.READ_PHONE_STATE) }
         }
     }
 
@@ -477,9 +596,17 @@ class MainActivity : ComponentActivity(), GameEvents {
         praiseIndex = 0
         ringing = false
         azkarPausedForCall = false
+        phoneRinging = telephony?.let { tm ->
+            runCatching {
+                @Suppress("DEPRECATION")
+                tm.callState == TelephonyManager.CALL_STATE_RINGING
+            }.getOrDefault(false)
+        } ?: false
+        gate = null
         playing = true
         blockBack.isEnabled = true
         hideSystemBars()
+        applyBrightnessCap()
         handler.removeCallbacks(callWatch)
         handler.post(callWatch)
         stopAzkarEditing()
@@ -494,7 +621,8 @@ class MainActivity : ComponentActivity(), GameEvents {
     }
 
     private fun exitPlay() {
-        showGate = false
+        gate = null
+        restoreBrightness()
         huntMatch = null
         playing = false
         ringing = false
@@ -513,15 +641,16 @@ class MainActivity : ComponentActivity(), GameEvents {
         val code = event.keyCode
         if (playing && (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN)) {
             val down = event.action == KeyEvent.ACTION_DOWN
-            if (code == KeyEvent.KEYCODE_VOLUME_UP) volUpDown = down else volDownDown = down
-            if (volUpDown && volDownDown) {
-                if (!holdArmed) {
-                    holdArmed = true
-                    handler.postDelayed(openGate, 3_000)
+            if (code == KeyEvent.KEYCODE_VOLUME_UP) {
+                if (down) {
+                    if (!holdArmed) {
+                        holdArmed = true
+                        handler.postDelayed(openGate, 2_000)
+                    }
+                } else {
+                    holdArmed = false
+                    handler.removeCallbacks(openGate)
                 }
-            } else {
-                holdArmed = false
-                handler.removeCallbacks(openGate)
             }
             return true // consumed: the child cannot change the volume either
         }
@@ -531,6 +660,8 @@ class MainActivity : ComponentActivity(), GameEvents {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus && playing) hideSystemBars()
+        // Something else came over the game: a call screen, a system dialog, a notification.
+        if (!hasFocus) outsideEvent()
     }
 
     override fun onResume() {
@@ -539,6 +670,8 @@ class MainActivity : ComponentActivity(), GameEvents {
             handler.removeCallbacks(callWatch)
             handler.post(callWatch)
             if (!azkarPausedForCall) azkar.resume()
+            hideSystemBars()
+            applyBrightnessCap()
         }
     }
 
@@ -549,11 +682,15 @@ class MainActivity : ComponentActivity(), GameEvents {
         // A long azkar recording is kept if the parent leaves the app midway.
         stopAzkarEditing()
         if (recorder.isRecording) recorder.stop(save = false)
-        if (playing) azkar.pause()
+        if (playing) {
+            azkar.pause()
+            outsideEvent()
+        }
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        stopListeningForCalls()
         sounds.release()
         speaker.release()
         voicePlayer.stop()
@@ -570,8 +707,6 @@ class MainActivity : ComponentActivity(), GameEvents {
     }
 
     private fun resetVolumeHold() {
-        volUpDown = false
-        volDownDown = false
         holdArmed = false
         handler.removeCallbacks(openGate)
     }
