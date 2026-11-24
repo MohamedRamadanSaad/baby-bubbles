@@ -125,6 +125,35 @@ class VoicePlayer(private val context: Context) {
         }
     }
 
+    /** Plays a recording bundled with the app. */
+    fun playRaw(@androidx.annotation.RawRes res: Int, volume: Float = 1f, onDone: () -> Unit = {}) {
+        stop()
+        val mp = MediaPlayer()
+        runCatching {
+            mp.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            context.resources.openRawResourceFd(res).use { afd ->
+                mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            }
+            mp.setVolume(volume, volume)
+            mp.setOnCompletionListener {
+                if (player === it) player = null
+                it.release()
+                onDone()
+            }
+            mp.prepare()
+            mp.start()
+            player = mp
+        }.onFailure {
+            mp.release()
+            onDone()
+        }
+    }
+
     fun stop() {
         player?.let {
             runCatching { it.stop() }

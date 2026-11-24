@@ -507,7 +507,8 @@ class MainActivity : ComponentActivity(), GameEvents {
         // سُبْحَانَ اللَّه، الْحَمْدُ لِلَّه، اللَّهُ أَكْبَر in turn, never cut mid-phrase.
         val i = praiseIndex % Catalog.praise.size
         val file = recordingFor(GameMode.COLORS, i)
-        if (file != null) voicePlayer.play(file) else speaker.say(Catalog.praise[i], SpeakLang.AR.locale)
+        // A parent's own recording first, otherwise the bundled human recording (never the phone's voice).
+        if (file != null) voicePlayer.play(file) else voicePlayer.playRaw(Catalog.praiseSounds[i])
         praiseIndex++
     }
 

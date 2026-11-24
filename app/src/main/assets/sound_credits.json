@@ -390,5 +390,29 @@
   "license": "Public domain",
   "licenseUrl": "",
   "artist": "stephan"
+ },
+ {
+  "sound": "snd_praise_subhan",
+  "title": "SubhanAllahi wa biHamdihi, Subhan-Allahil-azeem",
+  "page": "https://pixabay.com/sound-effects/people-subhanallahi-wa-bihamdihi-subhan-allahil-azeem-301505/",
+  "license": "Pixabay Content License",
+  "licenseUrl": "https://pixabay.com/service/license-summary/",
+  "artist": "Ibra7imbey"
+ },
+ {
+  "sound": "snd_praise_hamd",
+  "title": "File:Ar-الحمد لله.ogg",
+  "page": "https://commons.wikimedia.org/wiki/File:Ar-%D8%A7%D9%84%D8%AD%D9%85%D8%AF_%D9%84%D9%84%D9%87.ogg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "artist": "ArabicAudios"
+ },
+ {
+  "sound": "snd_praise_akbar",
+  "title": "File:Ar-eg-الله أكبر.oga",
+  "page": "https://commons.wikimedia.org/wiki/File:Ar-eg-%D8%A7%D9%84%D9%84%D9%87_%D8%A3%D9%83%D8%A8%D8%B1.oga",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Assem khidhr"
  }
 ]
