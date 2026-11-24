@@ -62,3 +62,6 @@ wolf | Wolf howls.ogg
 snake | Rattlesnake.ogg
 applause | Clapping hurray (cropped).oga
 fireworks | Fireworks in distance 3.ogg
+praise_hamd | Ar-الحمد لله.ogg
+praise_hamd_b | LL-Q55633582 (ajp)-AdrianAbdulBaha-الحمد لله.wav
+praise_akbar | Ar-eg-الله أكبر.oga
