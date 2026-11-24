@@ -167,6 +167,6 @@ object Catalog {
     /** Spoken on each pop in colors mode, in turn. */
     val praise = listOf("سُبحانَ الله.", "الحَمدُ لله.", "اللهُ أكبر.")
 
-    /** Real human recordings of the three phrases, in the same order (credits in sound_credits.json). */
+    /** The three phrases in the developer's own voice, in the same order. */
     val praiseSounds = listOf(R.raw.snd_praise_subhan, R.raw.snd_praise_hamd, R.raw.snd_praise_akbar)
 }

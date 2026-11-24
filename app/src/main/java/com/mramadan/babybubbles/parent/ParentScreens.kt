@@ -421,7 +421,8 @@ internal fun CreditsDialog(onClose: () -> Unit) {
             "الرسوم: رسوم أصلية لهذه اللعبة.",
             "الأعلام: flag-icons, Panayiotis Lipiridis — MIT License",
             "الخط: Baloo Bhaijaan 2 — SIL Open Font License",
-            "الأصوات (ويكيميديا كومنز وبيكساباي):",
+            "سبحان الله والحمد لله والله أكبر: بصوت مطوّر اللعبة.",
+            "أصوات الحيوانات والأشياء من ويكيميديا كومنز:",
         ) + sounds
     }
     AlertDialog(
