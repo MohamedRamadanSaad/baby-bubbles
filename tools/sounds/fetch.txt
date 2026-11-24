@@ -1,6 +1,10 @@
 # key | Commons file title (all freely licensed: PD, CC0, CC BY, CC BY-SA)
 cat | Meow of a Siamese cat - freemaster2.wav
 cat_b | Maullido de gata hembra joven.ogg
+cat_c | Meow.ogg
+cat_d | Meow domestic cat.ogg
+cat_e | Felis silvestris catus meows.ogg
+cat_f | Meow of a pleading cat.oga
 dog | Barking of a dog.ogg
 cow | Single Cow Moo.ogg
 cow_b | Mudchute cow 1.ogg

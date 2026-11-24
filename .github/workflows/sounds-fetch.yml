@@ -2,6 +2,10 @@ name: Sounds - fetch
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/sounds/fetch.txt"
 
 permissions:
   contents: write
